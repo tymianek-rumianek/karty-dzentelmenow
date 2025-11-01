@@ -13,39 +13,123 @@
                  font-src 'self' data:;" />
   <title>Karty Dżentelmenów — Online (Firebase)</title>
   <style>
-    :root{--bg:#0e0f13;--panel:#171923;--muted:#a1a6b0;--text:#eef1f3;--accent:#7c5cff;--ok:#2ecc71;--danger:#ff4d4d}
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
-    .wrap{max-width:1100px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-    header{display:flex;justify-content:space-between;align-items:center}
-    .title{font-weight:800}
-    .card{background:var(--panel);border:1px solid #232633;border-radius:14px;padding:16px}
-    .grid{display:grid;gap:12px}
-    .row{display:flex;gap:10px;align-items:center}
-    .col{display:flex;flex-direction:column;gap:8px}
-    .grow{flex:1}
-    input,button{border-radius:10px;border:1px solid #2b3040;background:#0f1117;color:var(--text);padding:10px 12px;font-size:14px}
-    button{background:var(--accent);border:0;font-weight:700;cursor:pointer}
-    button.ghost{background:#1a1c27}
-    button.danger{background:var(--danger)}
-    button:disabled{opacity:.6;cursor:not-allowed}
-    .badge{display:inline-block;border:1px solid #2b3040;background:#0f1117;padding:2px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
-    .players{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
-    .player{background:#10131a;border:1px solid #242a36;border-radius:12px;padding:8px;text-align:center;position:relative}
-    .player .dot{width:10px;height:10px;border-radius:999px;background:#777;display:inline-block;margin-right:6px}
-    .player.active{outline:2px solid var(--accent);box-shadow:0 0 0 4px rgba(124,92,255,.15)}
-    .player.active .dot{background:var(--accent)}
-    .prompt{min-height:140px;font-size:22px;line-height:1.25;background:#0f1117;border:1px dashed #2a2e3b;border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:center;text-align:center}
-    .answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
-    .answer{background:#10131a;border:1px solid #242a36;border-radius:12px;padding:12px;cursor:pointer}
-    .answer.mine{border-color:#3a4660}
-    .answer.selected{outline:2px solid var(--ok)}
-    .small{font-size:12px;color:var(--muted)}
-    .hr{height:1px;background:#24262f;margin:8px 0}
-    .hidden{display:none}
-    .center{display:flex;align-items:center;justify-content:center}
-    .warn{background:#2b1f1f;border:1px solid #7a3a3a;color:#ffbcbc;padding:8px 12px;border-radius:10px}
-  </style>
+  body {
+    background: #fff;
+    color: #000;
+    font-family: Inter, Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+  }
+
+  .wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 10px;
+  }
+
+  .title {
+    font-weight: 800;
+    font-size: 20px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #000;
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  .row { display: flex; gap: 10px; align-items: center; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+  .center { display: flex; justify-content: center; align-items: center; }
+
+  button {
+    border: 1px solid #000;
+    background: #000;
+    color: #fff;
+    padding: 10px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  button.ghost {
+    background: #fff;
+    color: #000;
+  }
+  button:hover { opacity: 0.8; }
+
+  input {
+    border: 1px solid #000;
+    padding: 8px 10px;
+    font-size: 14px;
+    border-radius: 4px;
+  }
+
+  .players {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+
+  .player {
+    background: #fff;
+    border: 1px solid #000;
+    border-radius: 4px;
+    padding: 10px;
+    text-align: center;
+    transition: 0.2s;
+  }
+
+  .player.active {
+    background: #000;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+  }
+
+  .prompt {
+    border: 1px solid #000;
+    border-radius: 6px;
+    min-height: 100px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+  }
+
+  .answers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+  }
+
+  .answer {
+    border: 1px solid #000;
+    border-radius: 4px;
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+    background: #fff;
+  }
+
+  .answer.selected {
+    background: #000;
+    color: #fff;
+  }
+
+  .hidden { display: none; }
+</style>
+
 </head>
 <body>
 <div class="wrap">
@@ -386,3 +470,4 @@
 </script>
 </body>
 </html>
+
