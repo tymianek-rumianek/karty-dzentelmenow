@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- CSP pozwalające na Firebase -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self' https://www.gstatic.com https://www.gstatic.com/firebasejs/ 'unsafe-inline';
+                 connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseinstallations.googleapis.com data: blob:;
+                 img-src 'self' data: https:;
+                 style-src 'self' 'unsafe-inline';
+                 font-src 'self' data:;" />
+  <title>Karty Dżentelmenów — Online (Firebase)</title>
+  <style>
+    :root{--bg:#0e0f13;--panel:#171923;--muted:#a1a6b0;--text:#eef1f3;--accent:#7c5cff;--ok:#2ecc71;--danger:#ff4d4d}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+    header{display:flex;justify-content:space-between;align-items:center}
+    .title{font-weight:800}
+    .card{background:var(--panel);border:1px solid #232633;border-radius:14px;padding:16px}
+    .grid{display:grid;gap:12px}
+    .row{display:flex;gap:10px;align-items:center}
+    .col{display:flex;flex-direction:column;gap:8px}
+    .grow{flex:1}
+    input,button{border-radius:10px;border:1px solid #2b3040;background:#0f1117;color:var(--text);padding:10px 12px;font-size:14px}
+    button{background:var(--accent);border:0;font-weight:700;cursor:pointer}
+    button.ghost{background:#1a1c27}
+    button.danger{background:var(--danger)}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .badge{display:inline-block;border:1px solid #2b3040;background:#0f1117;padding:2px 8px;border-radius:999px;font-size:12px;color:var(--muted)}
+    .players{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+    .player{background:#10131a;border:1px solid #242a36;border-radius:12px;padding:8px;text-align:center;position:relative}
+    .player .dot{width:10px;height:10px;border-radius:999px;background:#777;display:inline-block;margin-right:6px}
+    .player.active{outline:2px solid var(--accent);box-shadow:0 0 0 4px rgba(124,92,255,.15)}
+    .player.active .dot{background:var(--accent)}
+    .prompt{min-height:140px;font-size:22px;line-height:1.25;background:#0f1117;border:1px dashed #2a2e3b;border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:center;text-align:center}
+    .answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+    .answer{background:#10131a;border:1px solid #242a36;border-radius:12px;padding:12px;cursor:pointer}
+    .answer.mine{border-color:#3a4660}
+    .answer.selected{outline:2px solid var(--ok)}
+    .small{font-size:12px;color:var(--muted)}
+    .hr{height:1px;background:#24262f;margin:8px 0}
+    .hidden{display:none}
+    .center{display:flex;align-items:center;justify-content:center}
+    .warn{background:#2b1f1f;border:1px solid #7a3a3a;color:#ffbcbc;padding:8px 12px;border-radius:10px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">Karty Dżentelmenów — Online</div>
+    <div class="badge">Firebase (Anon Auth + Firestore)</div>
+  </header>
+
+  <div id="alert" class="warn hidden"></div>
+
+  <section id="screen-home" class="card grid">
+    <div class="row center">
+      <button id="go-create">Stwórz lobby</button>
+      <button id="go-join" class="ghost">Dołącz do gry</button>
+    </div>
+  </section>
+
+  <section id="screen-create" class="card grid hidden">
+    <div class="col">
+      <label class="small">Twój nick</label>
+      <input id="create-nick" placeholder="np. Tymianek" />
+    </div>
+    <div class="row">
+      <button id="btn-create">Utwórz lobby</button>
+      <button class="ghost" id="back1">Wróć</button>
+    </div>
+    <div class="small">Po utworzeniu dostaniesz <b>kod pokoju</b>. Wyślij znajomym.</div>
+  </section>
+
+  <section id="screen-join" class="card grid hidden">
+    <div class="col">
+      <label class="small">Kod pokoju</label>
+      <input id="join-code" placeholder="np. R4F7" />
+    </div>
+    <div class="col">
+      <label class="small">Twój nick</label>
+      <input id="join-nick" placeholder="np. Gość" />
+    </div>
+    <div class="row">
+      <button id="btn-join">Dołącz</button>
+      <button class="ghost" id="back2">Wróć</button>
+    </div>
+  </section>
+
+  <section id="screen-room" class="card hidden">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div class="col grow">
+        <div class="small">Gracze</div>
+        <div id="players" class="players"></div>
+      </div>
+      <div class="col" style="min-width:300px">
+        <div class="small">Pokój</div>
+        <div class="row">
+          <div class="badge">Kod: <b id="room-code">—</b></div>
+          <button id="copy-code" class="ghost">Kopiuj kod</button>
+        </div>
+        <div class="hr"></div>
+        <div class="small">Sterowanie</div>
+        <div class="row">
+          <button id="btn-start">Start rundy</button>
+          <button id="btn-leave" class="ghost">Wyjdź</button>
+        </div>
+        <div class="row">
+          <div class="badge">Runda: <b id="round-no">0</b></div>
+          <div class="badge">Sędzia: <b id="czar-name">—</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div class="grid">
+      <div>
+        <div class="small">Karta pytania</div>
+        <div id="prompt" class="prompt">—</div>
+      </div>
+      <div>
+        <div class="small">Zagrania</div>
+        <div id="answers" class="answers"></div>
+      </div>
+      <div>
+        <div class="small">Twoja ręka</div>
+        <div id="hand" class="answers"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+  // ===== UI FIRST =====
+  const $ = (s)=>document.querySelector(s);
+  const screens = {home: $('#screen-home'), create: $('#screen-create'), join: $('#screen-join'), room: $('#screen-room')};
+  const playersEl = $('#players');
+  const promptEl  = $('#prompt');
+  const answersEl = $('#answers');
+  const handEl    = $('#hand');
+  const roundEl   = $('#round-no');
+  const czarNameEl= $('#czar-name');
+  const roomCodeEl= $('#room-code');
+  const alertBox  = $('#alert');
+
+  let firebaseReady = false;
+  let me = { id:null, name:null };
+  let room = null;
+  let unsubRoom=null, unsubPlayers=null, unsubSubs=null, unsubHand=null;
+
+  function show(name){ Object.values(screens).forEach(x=>x.classList.add('hidden')); screens[name].classList.remove('hidden'); }
+  function warn(msg){ alertBox.textContent = msg; alertBox.classList.remove('hidden'); console.error(msg); }
+  function nowarn(){ alertBox.classList.add('hidden'); alertBox.textContent=''; }
+
+  $('#go-create').onclick = ()=> show('create');
+  $('#go-join').onclick   = ()=> show('join');
+  $('#back1').onclick     = ()=> show('home');
+  $('#back2').onclick     = ()=> show('home');
+
+  $('#btn-create').onclick= ()=> firebaseReady? createLobby(): warn('Backend niegotowy. Sprawdź Firebase config i odśwież.');
+  $('#btn-join').onclick  = ()=> firebaseReady? joinLobby()  : warn('Backend niegotowy. Sprawdź Firebase config i odśwież.');
+  $('#btn-start').onclick = ()=> firebaseReady? startRound() : warn('Backend niegotowy.');
+  $('#btn-leave').onclick = ()=> firebaseReady? leaveRoom()  : show('home');
+  $('#copy-code').onclick = ()=> copyCode();
+
+  show('home');
+
+  // ===== Firebase z CDN =====
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, getDocs, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+  // >>> TU JEST TWÓJ CONFIG <<<
+  const firebaseConfig = {
+    apiKey: "AIzaSyC6emXNbCXSwx2xCAaUnQw9YR29Zzg1JzU",
+    authDomain: "karty-dzentelmenow.firebaseapp.com",
+    projectId: "karty-dzentelmenow",
+    storageBucket: "karty-dzentelmenow.appspot.com",   // poprawione
+    messagingSenderId: "1024966784216",
+    appId: "1:1024966784216:web:9eecee00ee849f079313ad"
+  };
+
+  let app, auth, db;
+  try{
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    // stabilniejsza sesja
+    await setPersistence(auth, browserLocalPersistence);
+    await signInAnonymously(auth);
+    db = getFirestore(app);
+    firebaseReady = true; nowarn();
+  }catch(e){
+    console.error("AUTH ERROR:", e);
+    warn('Firebase nie działa: ' + (e?.code || e?.message || e));
+  }
+
+  // ===== Talia (na start) =====
+  const DEFAULT_QUESTIONS = [
+    "_________ to najlepszy sposób na rozpoczęcie dnia.",
+    "W piekle czeka na mnie kara za _________.",
+    "Kiedy byłem dzieckiem, najbardziej bałem się _________.",
+    "Mój sekret na udaną randkę: _________.",
+  ];
+  const DEFAULT_ANSWERS = [
+    "pół kilo żelatyny","księdza na hulajnodze elektrycznej","martwego gołębia w plecaku","mój plan na życie","znudzonego nauczyciela WF-u","sandacz po litewsku","szósty kubek kawy","kredyt na 30 lat"
+  ];
+
+  // ===== Helpers =====
+  function makeCode(len=4){ const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<len;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+  function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+  // ===== Flow =====
+  async function createLobby(){
+    try{
+      const nick = $('#create-nick').value.trim() || 'Gracz';
+      const code = makeCode();
+      const uid  = auth.currentUser.uid; me = {id: uid, name: nick};
+
+      const roomRef = doc(db,'rooms',code);
+      await setDoc(roomRef,{
+        code, createdAt: serverTimestamp(), stage:'lobby', round:0,
+        czarId:null, czarIdx:0, prompt:'', winner:null,
+        deckQ: shuffle([...DEFAULT_QUESTIONS]),
+        deckA: shuffle([...DEFAULT_ANSWERS]),
+        discardQ:[], discardA:[],
+        hostId: uid
+      });
+      await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), isOnline:true });
+      await setDoc(doc(db,'rooms',code,'hands',uid),{ cards:[] });
+
+      await enterRoom(code);
+    }catch(e){ warn('Błąd tworzenia pokoju: '+(e?.message||e)); }
+  }
+
+  async function joinLobby(){
+    try{
+      const code = ($('#join-code').value||'').trim().toUpperCase();
+      const nick = ($('#join-nick').value||'').trim() || 'Gość';
+      if(!code) return warn('Podaj kod.');
+      const roomRef = doc(db,'rooms',code);
+      if(!(await getDoc(roomRef)).exists()) return warn('Nie ma takiego pokoju.');
+
+      const uid = auth.currentUser.uid; me = {id: uid, name: nick};
+      await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), isOnline:true });
+      const handRef = doc(db,'rooms',code,'hands',uid);
+      if(!(await getDoc(handRef)).exists()) await setDoc(handRef,{cards:[]});
+
+      await enterRoom(code);
+    }catch(e){ warn('Błąd dołączania: '+(e?.message||e)); }
+  }
+
+  async function enterRoom(code){ subscribeRoom(code); show('room'); }
+
+  function subscribeRoom(code){
+    roomCodeEl.textContent = code;
+    unsubRoom?.(); unsubPlayers?.(); unsubSubs?.(); unsubHand?.();
+
+    const roomRef = doc(db,'rooms',code);
+    unsubRoom = onSnapshot(roomRef,(snap)=>{ room = snap.data(); renderRoom(); });
+
+    const playersCol = collection(db,'rooms',code,'players');
+    unsubPlayers = onSnapshot(playersCol,(snap)=>{
+      room.players = []; snap.forEach(d=>room.players.push({id:d.id,...d.data()}));
+      renderPlayers();
+    });
+
+    const subsCol = collection(db,'rooms',code,'submissions');
+    unsubSubs = onSnapshot(subsCol,(snap)=>{
+      room.submissions = []; snap.forEach(d=>room.submissions.push({id:d.id,...d.data()}));
+      renderSubmissions();
+    });
+
+    const handRef = doc(db,'rooms',code,'hands', (auth.currentUser||{}).uid || '');
+    unsubHand = onSnapshot(handRef,(snap)=>{ room.myHand = snap.data()?.cards || []; renderHand(); });
+  }
+
+  async function leaveRoom(){
+    try{
+      if(!room) { show('home'); return; }
+      const code = room.code; const uid = (auth.currentUser||{}).uid;
+      await Promise.all([
+        deleteDoc(doc(db,'rooms',code,'players',uid)),
+        deleteDoc(doc(db,'rooms',code,'hands',uid)),
+        deleteDoc(doc(db,'rooms',code,'submissions',uid)).catch(()=>{})
+      ]);
+      unsubRoom?.(); unsubPlayers?.(); unsubSubs?.(); unsubHand?.();
+      room=null; show('home');
+    }catch(e){ warn('Błąd opuszczania pokoju: '+(e?.message||e)); }
+  }
+
+  async function startRound(){
+    try{
+      if(!room) return;
+      if (((auth.currentUser||{}).uid) !== room.hostId) return warn('Tylko host może rozpocząć rundę.');
+      const code = room.code;
+
+      const playersSnap = await getDocs(collection(db,'rooms',code,'players'));
+      const players = []; playersSnap.forEach(d=>players.push({id:d.id,...d.data()}));
+      if(players.length<3) return warn('Potrzeba min. 3 graczy.');
+
+      const czarIdx = room.czarIdx||0; const czar = players[czarIdx % players.length];
+
+      let deckQ = [...(room.deckQ||[])]; let discardQ = [...(room.discardQ||[])];
+      if(!deckQ.length){ deckQ = shuffle(discardQ); discardQ = []; }
+      if(!deckQ.length) return warn('Brak kart pytań.');
+      const prompt = deckQ.shift();
+
+      let deckA = [...(room.deckA||[])]; let discardA = [...(room.discardA||[])];
+      if(deckA.length < players.length*3 && discardA.length) { deckA = deckA.concat(shuffle(discardA)); discardA = []; }
+
+      const batch = writeBatch(db);
+
+      for(const p of players){
+        const hRef = doc(db,'rooms',code,'hands',p.id);
+        const hSnap = await getDoc(hRef);
+        const cards = hSnap.exists()? (hSnap.data().cards||[]) : [];
+        const need = Math.max(0, 7 - cards.length);
+        for(let i=0;i<need;i++){
+          if(!deckA.length) break; cards.push(deckA.shift());
+        }
+        batch.set(hRef,{cards});
+      }
+
+      const subsSnap = await getDocs(collection(db,'rooms',code,'submissions'));
+      subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)) );
+
+      batch.update(doc(db,'rooms',code),{
+        stage:'playing', round:(room.round||0)+1,
+        czarId: czar.id, czarIdx: (czarIdx+1)%players.length,
+        prompt, deckQ, discardQ, deckA, discardA, winner:null
+      });
+
+      await batch.commit();
+    }catch(e){ warn('Błąd startu rundy: '+(e?.message||e)); }
+  }
+
+  async function playCard(index){
+    try{
+      if(!room || room.stage!=='playing') return;
+      if(room.czarId=== (auth.currentUser||{}).uid) return warn('Sędzia nie zagrywa.');
+      const code = room.code;
+      const hRef = doc(db,'rooms',code,'hands',(auth.currentUser||{}).uid||'');
+      const hSnap = await getDoc(hRef);
+      const cards = hSnap.data()?.cards||[];
+      const card = cards[index]; if(!card) return;
+
+      await setDoc(doc(db,'rooms',code,'submissions',(auth.currentUser||{}).uid||''),{
+        uid: (auth.currentUser||{}).uid, name: me.name, text: card, at: serverTimestamp()
+      });
+
+      cards.splice(index,1); await updateDoc(hRef,{cards});
+    }catch(e){ warn('Błąd zagrania karty: '+(e?.message||e)); }
+  }
+
+  async function chooseWinner(uid){
+    try{
+      if(room.czarId!== (auth.currentUser||{}).uid) return; // tylko sędzia
+      const code = room.code;
+      const subRef = doc(db,'rooms',code,'submissions',uid);
+      const subSnap = await getDoc(subRef); if(!subSnap.exists()) return;
+      const winText = subSnap.data().text;
+
+      const pRef = doc(db,'rooms',code,'players',uid);
+      const pSnap = await getDoc(pRef); const score = (pSnap.data()?.score||0)+1;
+
+      const batch = writeBatch(db);
+      batch.update(doc(db,'rooms',code),{ winner:{uid, text:winText} });
+      batch.update(pRef,{score}); await batch.commit();
+    }catch(e){ warn('Błąd wyboru zwycięzcy: '+(e?.message||e)); }
+  }
+
+  function copyCode(){ if(!room?.code) return; navigator.clipboard.writeText(room.code).catch(()=>{}); const b=$('#copy-code'); const t=b.textContent; b.textContent='Skopiowano'; setTimeout(()=>b.textContent=t,1200); }
+
+  // ===== Render =====
+  function renderRoom(){ if(!room) return; roundEl.textContent = room.round||0; promptEl.textContent = room.prompt || '—'; }
+  function renderPlayers(){ const players = room?.players||[]; playersEl.innerHTML = players.map(p=>`<div class="player ${p.id===room?.czarId?'active':''}"><div class="small"><span class="dot"></span>${esc(p.name)}</div><div class="badge">${p.score||0} pkt</div></div>`).join(''); const czar = players.find(p=>p.id===room?.czarId); czarNameEl.textContent = czar? czar.name : '—'; }
+  function renderSubmissions(){ const subs = room?.submissions||[]; answersEl.innerHTML = subs.map(s=>`<div class="answer ${room?.winner?.uid===s.uid?'selected':''}" data-uid="${s.uid}">${esc(s.text)}</div>`).join(''); if(room?.czarId=== (auth.currentUser||{}).uid){ answersEl.querySelectorAll('.answer').forEach(el=> el.onclick = ()=> chooseWinner(el.getAttribute('data-uid')) ); } else { answersEl.querySelectorAll('.answer').forEach(el=> el.onclick=null); } }
+  function renderHand(){ const hand = room?.myHand||[]; handEl.innerHTML = hand.map((t,i)=>`<div class="answer" data-i="${i}">${esc(t)}</div>`).join(''); handEl.querySelectorAll('.answer').forEach(el=> el.onclick = ()=> playCard(parseInt(el.getAttribute('data-i')))); }
+
+  Object.defineProperty(window,'firebaseAuthUid',{get(){ return (auth&&auth.currentUser)?auth.currentUser.uid:null; }});
+</script>
+</body>
+</html>
