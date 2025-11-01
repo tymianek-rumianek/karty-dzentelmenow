@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- CSP pozwalające na Firebase -->
+  <!-- CSP pozwalające na Firebase (działa na GitHub Pages / Firebase Hosting) -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
                  script-src 'self' https://www.gstatic.com https://www.gstatic.com/firebasejs/ 'unsafe-inline';
@@ -11,213 +11,183 @@
                  img-src 'self' data: https:;
                  style-src 'self' 'unsafe-inline';
                  font-src 'self' data:;" />
-  <title>Karty Dżentelmenów — Online (Firebase)</title>
+  <title>Karty Dżentelmenów — Online</title>
+
   <style>
-  /* --- Layout & reset --- */
-  :root {
-    --black: #000;
-    --white: #fff;
-    --border: #000;
-  }
-  * { box-sizing: border-box }
-  html, body { margin:0; background:#fff; color:#000; font-family: Inter, Arial, sans-serif; }
-  .wrap { max-width: 1280px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:16px; }
+    /* ====== Reset & bazowe ====== */
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#fff;color:#000;font-family:Inter,Arial,sans-serif}
+    .wrap{max-width:1280px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+    header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #000}
+    .title{font-weight:800;font-size:18px}
+    .hidden{display:none}
+    .small{font-size:12px}
 
-  header { display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid #000; }
-  .title { font-weight:800; font-size:18px; }
+    /* ====== Pasek graczy ====== */
+    .players-bar{
+      position:sticky;top:8px;z-index:10;
+      display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:6px 0
+    }
+    .player{
+      min-width:90px;height:22px;background:#fff;color:#000;
+      border:1px solid #000;border-radius:3px;display:flex;align-items:center;justify-content:center;
+      padding:0 8px;font-size:12px;line-height:1
+    }
+    .player.active{background:#000;color:#fff;box-shadow:0 0 12px rgba(0,0,0,.30)}
 
-  /* --- Gracze --- */
-  .players-bar {
-    position: sticky; top:8px;
-    display:flex; gap:8px; align-items:center; justify-content:center; flex-wrap:wrap;
-    padding:6px 0;
-    z-index: 10;
-  }
-  .player {
-    min-width:90px; height:22px;
-    background:#fff; color:#000;
-    border:1px solid #000; border-radius:3px;      /* mini zaokrąglenie */
-    display:flex; align-items:center; justify-content:center;
-    padding:0 8px; font-size:12px; line-height:1;
-  }
-  .player.active {
-    background:#000; color:#fff;
-    box-shadow: 0 0 12px rgba(0,0,0,.30);          /* delikatna poświata */
-  }
+    /* ====== Plansza 3 kolumny: lewy panel / czarna karta / ręka ====== */
+    .board{
+      display:grid;grid-template-columns: 230px 1fr 38vw;gap:20px;align-items:start;min-height:70vh
+    }
 
-  /* --- Plansza --- */
-  .board {
-    display:grid;
-    grid-template-columns: 1fr 36vw;               /* środek + panel ręki po prawej */
-    gap:20px;
-    align-items:start;
-    min-height:70vh;
-  }
+    /* Lewy panel – przyciski i info pokoju */
+    .ctrl{
+      border:1px solid #000;border-radius:3px;padding:12px;background:#fff;position:sticky;top:46px
+    }
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px}
+    input{border:1px solid #000;border-radius:3px;padding:8px 10px}
+    button{border:1px solid #000;border-radius:3px;padding:8px 12px;font-weight:700;background:#000;color:#fff;cursor:pointer}
+    button.ghost{background:#fff;color:#000}
+    .badge{display:inline-block;border:1px solid #000;border-radius:999px;padding:2px 8px}
 
-  /* --- Czarna karta (prompt) --- */
-  .prompt-wrap {
-    display:flex; align-items:center; justify-content:center;
-    min-height:60vh;
-  }
-  .prompt {                                        /* czarna karta na środku */
-    width:min(32vw, 520px);
-    aspect-ratio: 2.5 / 3.5;                       /* proporcje karty */
-    background:#000; color:#fff;
-    border:1px solid #000; border-radius:3px;
-    display:flex; align-items:center; justify-content:center;
-    text-align:center; padding:18px; font-size:20px;
-    transition: transform .22s ease, opacity .22s ease;
-  }
+    /* Czarna karta (prompt) – centrum */
+    .prompt-wrap{display:flex;align-items:center;justify-content:center;min-height:60vh}
+    .prompt{
+      width:min(32vw,520px);aspect-ratio:2.5/3.5;background:#000;color:#fff;
+      border:1px solid #000;border-radius:3px;display:flex;align-items:center;justify-content:center;
+      text-align:center;padding:18px;font-size:20px;transition:transform .22s ease,opacity .22s ease
+    }
 
-  /* --- Panel z ręką gracza --- */
-  .hand-panel {
-    border:1px solid #000; border-radius:3px;
-    padding:12px; background:#fff;
-  }
-  .hand-grid {
-    display:grid; grid-template-columns: repeat(3, 1fr);
-    gap:10px;
-  }
-  .card-btn {
-    border:1px solid #000; border-radius:3px;
-    background:#fff; cursor:pointer; padding:0;
-    width:100%; aspect-ratio: 2.5 / 3.5;
-    display:flex; align-items:center; justify-content:center;
-    transition: transform .15s ease;
-    overflow:hidden;
-  }
-  .card-btn:hover { transform: translateY(-2px); }
-  .card-btn img { width:100%; height:100%; object-fit:cover; display:block; }
-  .card-btn .fallback { padding:8px; font-size:12px; text-align:center; }
+    /* Panel ręki gracza – prawa kolumna */
+    .hand{border:1px solid #000;border-radius:3px;padding:12px;background:#fff}
+    .hand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .card-btn{
+      border:1px solid #000;border-radius:3px;background:#fff;cursor:pointer;padding:0;
+      width:100%;aspect-ratio:2.5/3.5;display:flex;align-items:center;justify-content:center;overflow:hidden;
+      transition:transform .15s ease
+    }
+    .card-btn:hover{transform:translateY(-2px)}
+    .card-btn img{width:100%;height:100%;object-fit:cover;display:block}
+    .card-btn .fallback{padding:8px;font-size:12px;text-align:center}
 
-  /* --- Podgląd karty po najechaniu --- */
-  .preview {
-    position: fixed; inset:0; pointer-events:none; z-index: 30;
-    display:flex; align-items:center; justify-content:center;
-    opacity:0; transform: scale(.98);
-    transition: opacity .18s ease, transform .18s ease;
-  }
-  .preview.visible { opacity:1; transform: scale(1); }
-  .preview-card {
-    width:min(50vw, 620px);
-    aspect-ratio: 2.5 / 3.5;
-    border:1px solid #000; border-radius:3px; background:#fff;
-    box-shadow: 0 10px 30px rgba(0,0,0,.20);
-    overflow:hidden; display:flex; align-items:center; justify-content:center;
-  }
-  .preview-card img { width:100%; height:100%; object-fit:cover; display:block; }
-  .preview-card .fallback { padding:16px; font-size:18px; text-align:center; color:#000; }
+    /* Podgląd karty na hover */
+    .preview{position:fixed;inset:0;pointer-events:none;z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.98);transition:opacity .18s ease,transform .18s ease}
+    .preview.visible{opacity:1;transform:scale(1)}
+    .preview-card{
+      width:min(50vw,620px);aspect-ratio:2.5/3.5;border:1px solid #000;border-radius:3px;background:#fff;
+      box-shadow:0 10px 30px rgba(0,0,0,.20);overflow:hidden;display:flex;align-items:center;justify-content:center
+    }
+    .preview-card img{width:100%;height:100%;object-fit:cover;display:block}
+    .preview-card .fallback{padding:16px;font-size:18px;text-align:center;color:#000}
 
-  /* --- Gdy trwa podgląd: czarna karta idzie w lewo i lekko maleje; pasek graczy zbija się do góry --- */
-  body.previewing .prompt { transform: translateX(-10vw) scale(.88); }
-  body.previewing .players-bar { gap:6px; }
+    /* Efekt globalny podczas podglądu */
+    body.previewing .prompt{transform:translateX(-10vw) scale(.88)}
+    body.previewing .players-bar{gap:6px}
 
-  /* --- Przyciski i formularze — proste, czarno-białe --- */
-  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .col { display:flex; flex-direction:column; gap:6px; }
-  .card { border:1px solid #000; border-radius:3px; padding:12px; background:#fff; }
-  input { border:1px solid #000; border-radius:3px; padding:8px 10px; }
-  button { border:1px solid #000; border-radius:3px; padding:8px 12px; font-weight:700; background:#000; color:#fff; cursor:pointer; }
-  button.ghost { background:#fff; color:#000; }
-  .hidden { display:none; }
-  .small { font-size:12px; }
-</style>
-
-
+    /* Sekcja start/join */
+    .card{border:1px solid #000;border-radius:3px;padding:12px;background:#fff}
+    .warn{border:1px solid #000;border-radius:3px;padding:8px;background:#fff1f1;color:#000}
+  </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="title">Karty Dżentelmenów — Online</div>
-    <div class="badge">Firebase (Anon Auth + Firestore)</div>
+    <div class="small" id="alert" class="warn hidden"></div>
   </header>
 
-  <div id="alert" class="warn hidden"></div>
-
-  <section id="screen-home" class="card grid">
-    <div class="row center">
+  <!-- Ekran startowy -->
+  <section id="screen-home" class="card">
+    <div class="row">
       <button id="go-create">Stwórz lobby</button>
       <button id="go-join" class="ghost">Dołącz do gry</button>
     </div>
   </section>
 
-  <section id="screen-create" class="card grid hidden">
-    <div class="col">
+  <!-- Tworzenie lobby -->
+  <section id="screen-create" class="card hidden">
+    <div class="col" style="max-width:480px">
       <label class="small">Twój nick</label>
       <input id="create-nick" placeholder="np. Tymianek" />
+      <div class="row">
+        <button id="btn-create">Utwórz lobby</button>
+        <button class="ghost" id="back1">Wróć</button>
+      </div>
     </div>
-    <div class="row">
-      <button id="btn-create">Utwórz lobby</button>
-      <button class="ghost" id="back1">Wróć</button>
-    </div>
-    <div class="small">Po utworzeniu dostaniesz <b>kod pokoju</b>. Wyślij znajomym.</div>
   </section>
 
-  <section id="screen-join" class="card grid hidden">
-    <div class="col">
+  <!-- Dołączanie -->
+  <section id="screen-join" class="card hidden">
+    <div class="col" style="max-width:480px">
       <label class="small">Kod pokoju</label>
       <input id="join-code" placeholder="np. R4F7" />
-    </div>
-    <div class="col">
       <label class="small">Twój nick</label>
       <input id="join-nick" placeholder="np. Gość" />
-    </div>
-    <div class="row">
-      <button id="btn-join">Dołącz</button>
-      <button class="ghost" id="back2">Wróć</button>
+      <div class="row">
+        <button id="btn-join">Dołącz</button>
+        <button class="ghost" id="back2">Wróć</button>
+      </div>
     </div>
   </section>
 
-  <section id="screen-room" class="card hidden">
+  <!-- Rozgrywka -->
+  <section id="screen-room" class="hidden">
     <!-- Pasek graczy -->
-<div id="players" class="players-bar"></div>
-    <div class="row" style="justify-content:space-between;align-items:flex-start">
-      <div class="col grow">
-        <div class="small">Gracze</div>
-        <div id="players" class="players"></div>
-      </div>
-      <div class="col" style="min-width:300px">
-        <div class="small">Pokój</div>
-        <div class="row">
-          <div class="badge">Kod: <b id="room-code">—</b></div>
-          <button id="copy-code" class="ghost">Kopiuj kod</button>
-        </div>
-        <div class="hr"></div>
-        <div class="small">Sterowanie</div>
-        <div class="row">
-          <button id="btn-start">Start rundy</button>
-          <button id="btn-leave" class="ghost">Wyjdź</button>
-        </div>
-        <div class="row">
-          <div class="badge">Runda: <b id="round-no">0</b></div>
-          <div class="badge">Sędzia: <b id="czar-name">—</b></div>
-        </div>
-      </div>
-    </div>
+    <div id="players" class="players-bar"></div>
 
-    <div class="hr"></div>
+    <div class="board">
+      <!-- Lewy panel: przyciski/info -->
+      <aside class="ctrl">
+        <div class="col">
+          <div class="small">Pokój</div>
+          <div class="row">
+            <div class="badge">Kod: <b id="room-code">—</b></div>
+            <button id="copy-code" class="ghost">Kopiuj</button>
+          </div>
+          <div class="small" style="margin-top:8px">Sterowanie</div>
+          <div class="row">
+            <button id="btn-start">Start rundy</button>
+            <button id="btn-leave" class="ghost">Wyjdź</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <div class="badge">Runda: <b id="round-no">0</b></div>
+            <div class="badge">Sędzia: <b id="czar-name">—</b></div>
+          </div>
+        </div>
+      </aside>
 
-    <div class="grid">
-      <div>
-        <div class="small">Karta pytania</div>
+      <!-- Środek: czarna karta -->
+      <main class="prompt-wrap">
         <div id="prompt" class="prompt">—</div>
-      </div>
-      <div>
-        <div class="small">Zagrania</div>
-        <div id="answers" class="answers"></div>
-      </div>
-      <div>
-        <div class="small">Twoja ręka</div>
-        <div id="hand" class="answers"></div>
-      </div>
+      </main>
+
+      <!-- Prawa: ręka gracza -->
+      <aside class="hand">
+        <div class="small" style="margin-bottom:8px">Twoja ręka</div>
+        <div id="hand" class="hand-grid"></div>
+      </aside>
     </div>
+
+    <!-- Miejsce na zagrane odpowiedzi (prosto) -->
+    <div id="answers" class="card hidden"></div>
   </section>
 </div>
 
+<!-- Podgląd dużej karty -->
+<div id="preview" class="preview hidden" aria-hidden="true">
+  <div id="previewCard" class="preview-card"></div>
+</div>
+
 <script type="module">
-  // ===== UI FIRST =====
-  const $ = (s)=>document.querySelector(s);
-  const screens = {home: $('#screen-home'), create: $('#screen-create'), join: $('#screen-join'), room: $('#screen-room')};
+  /* ====== UI helpers ====== */
+  const $ = s => document.querySelector(s);
+  const screens = {
+    home: $('#screen-home'),
+    create: $('#screen-create'),
+    join: $('#screen-join'),
+    room: $('#screen-room')
+  };
   const playersEl = $('#players');
   const promptEl  = $('#prompt');
   const answersEl = $('#answers');
@@ -227,12 +197,10 @@
   const roomCodeEl= $('#room-code');
   const alertBox  = $('#alert');
 
-  let firebaseReady = false;
-  let me = { id:null, name:null };
-  let room = null;
-  let unsubRoom=null, unsubPlayers=null, unsubSubs=null, unsubHand=null;
-
-  function show(name){ Object.values(screens).forEach(x=>x.classList.add('hidden')); screens[name].classList.remove('hidden'); }
+  function show(name){
+    Object.values(screens).forEach(x=>x.classList.add('hidden'));
+    screens[name].classList.remove('hidden');
+  }
   function warn(msg){ alertBox.textContent = msg; alertBox.classList.remove('hidden'); console.error(msg); }
   function nowarn(){ alertBox.classList.add('hidden'); alertBox.textContent=''; }
 
@@ -241,25 +209,19 @@
   $('#back1').onclick     = ()=> show('home');
   $('#back2').onclick     = ()=> show('home');
 
-  $('#btn-create').onclick= ()=> firebaseReady? createLobby(): warn('Backend niegotowy. Sprawdź Firebase config i odśwież.');
-  $('#btn-join').onclick  = ()=> firebaseReady? joinLobby()  : warn('Backend niegotowy. Sprawdź Firebase config i odśwież.');
-  $('#btn-start').onclick = ()=> firebaseReady? startRound() : warn('Backend niegotowy.');
-  $('#btn-leave').onclick = ()=> firebaseReady? leaveRoom()  : show('home');
-  $('#copy-code').onclick = ()=> copyCode();
+  let firebaseReady=false, me={id:null,name:null}, room=null;
+  let unsubRoom=null, unsubPlayers=null, unsubSubs=null, unsubHand=null;
 
-  show('home');
-
-  // ===== Firebase z CDN =====
+  /* ====== Firebase (CDN) ====== */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
   import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, getDocs, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-  // >>> TU JEST TWÓJ CONFIG <<<
   const firebaseConfig = {
     apiKey: "AIzaSyC6emXNbCXSwx2xCAaUnQw9YR29Zzg1JzU",
     authDomain: "karty-dzentelmenow.firebaseapp.com",
     projectId: "karty-dzentelmenow",
-    storageBucket: "karty-dzentelmenow.appspot.com",   // poprawione
+    storageBucket: "karty-dzentelmenow.appspot.com",
     messagingSenderId: "1024966784216",
     appId: "1:1024966784216:web:9eecee00ee849f079313ad"
   };
@@ -268,7 +230,6 @@
   try{
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
-    // stabilniejsza sesja
     await setPersistence(auth, browserLocalPersistence);
     await signInAnonymously(auth);
     db = getFirestore(app);
@@ -278,7 +239,7 @@
     warn('Firebase nie działa: ' + (e?.code || e?.message || e));
   }
 
-  // ===== Talia (na start) =====
+  /* ====== Dane demo ====== */
   const DEFAULT_QUESTIONS = [
     "_________ to najlepszy sposób na rozpoczęcie dnia.",
     "W piekle czeka na mnie kara za _________.",
@@ -289,12 +250,21 @@
     "pół kilo żelatyny","księdza na hulajnodze elektrycznej","martwego gołębia w plecaku","mój plan na życie","znudzonego nauczyciela WF-u","sandacz po litewsku","szósty kubek kawy","kredyt na 30 lat"
   ];
 
-  // ===== Helpers =====
+  /* ====== Helpers ====== */
   function makeCode(len=4){ const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<len;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
   function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
   function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 
-  // ===== Flow =====
+  /* ====== UI -> akcje ====== */
+  $('#btn-create').onclick= ()=> firebaseReady? createLobby(): warn('Backend niegotowy. Odśwież.');
+  $('#btn-join').onclick  = ()=> firebaseReady? joinLobby()  : warn('Backend niegotowy.');
+  $('#btn-start').onclick = ()=> firebaseReady? startRound() : warn('Backend niegotowy.');
+  $('#btn-leave').onclick = ()=> firebaseReady? leaveRoom()  : show('home');
+  $('#copy-code').onclick = ()=> copyCode();
+
+  show('home');
+
+  /* ====== Flow gry (Firestore) ====== */
   async function createLobby(){
     try{
       const nick = $('#create-nick').value.trim() || 'Gracz';
@@ -355,7 +325,7 @@
       renderSubmissions();
     });
 
-    const handRef = doc(db,'rooms',code,'hands', (auth.currentUser||{}).uid || '');
+    const handRef = doc(db,'rooms',code,'hands',(auth.currentUser||{}).uid||'');
     unsubHand = onSnapshot(handRef,(snap)=>{ room.myHand = snap.data()?.cards || []; renderHand(); });
   }
 
@@ -376,7 +346,7 @@
   async function startRound(){
     try{
       if(!room) return;
-      if (((auth.currentUser||{}).uid) !== room.hostId) return warn('Tylko host może rozpocząć rundę.');
+      if(((auth.currentUser||{}).uid)!==room.hostId) return warn('Tylko host może rozpocząć rundę.');
       const code = room.code;
 
       const playersSnap = await getDocs(collection(db,'rooms',code,'players'));
@@ -400,14 +370,12 @@
         const hSnap = await getDoc(hRef);
         const cards = hSnap.exists()? (hSnap.data().cards||[]) : [];
         const need = Math.max(0, 7 - cards.length);
-        for(let i=0;i<need;i++){
-          if(!deckA.length) break; cards.push(deckA.shift());
-        }
+        for(let i=0;i<need;i++){ if(!deckA.length) break; cards.push(deckA.shift()); }
         batch.set(hRef,{cards});
       }
 
       const subsSnap = await getDocs(collection(db,'rooms',code,'submissions'));
-      subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)) );
+      subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)));
 
       batch.update(doc(db,'rooms',code),{
         stage:'playing', round:(room.round||0)+1,
@@ -422,7 +390,7 @@
   async function playCard(index){
     try{
       if(!room || room.stage!=='playing') return;
-      if(room.czarId=== (auth.currentUser||{}).uid) return warn('Sędzia nie zagrywa.');
+      if(room.czarId===(auth.currentUser||{}).uid) return warn('Sędzia nie zagrywa.');
       const code = room.code;
       const hRef = doc(db,'rooms',code,'hands',(auth.currentUser||{}).uid||'');
       const hSnap = await getDoc(hRef);
@@ -430,7 +398,7 @@
       const card = cards[index]; if(!card) return;
 
       await setDoc(doc(db,'rooms',code,'submissions',(auth.currentUser||{}).uid||''),{
-        uid: (auth.currentUser||{}).uid, name: me.name, text: card, at: serverTimestamp()
+        uid:(auth.currentUser||{}).uid, name:me.name, text:card, at:serverTimestamp()
       });
 
       cards.splice(index,1); await updateDoc(hRef,{cards});
@@ -439,7 +407,7 @@
 
   async function chooseWinner(uid){
     try{
-      if(room.czarId!== (auth.currentUser||{}).uid) return; // tylko sędzia
+      if(room.czarId!==(auth.currentUser||{}).uid) return;
       const code = room.code;
       const subRef = doc(db,'rooms',code,'submissions',uid);
       const subSnap = await getDoc(subRef); if(!subSnap.exists()) return;
@@ -454,17 +422,68 @@
     }catch(e){ warn('Błąd wyboru zwycięzcy: '+(e?.message||e)); }
   }
 
-  function copyCode(){ if(!room?.code) return; navigator.clipboard.writeText(room.code).catch(()=>{}); const b=$('#copy-code'); const t=b.textContent; b.textContent='Skopiowano'; setTimeout(()=>b.textContent=t,1200); }
+  function copyCode(){ if(!room?.code) return; navigator.clipboard.writeText(room.code).catch(()=>{}); }
 
-  // ===== Render =====
-  function renderRoom(){ if(!room) return; roundEl.textContent = room.round||0; promptEl.textContent = room.prompt || '—'; }
-  function renderPlayers(){ const players = room?.players||[]; playersEl.innerHTML = players.map(p=>`<div class="player ${p.id===room?.czarId?'active':''}"><div class="small"><span class="dot"></span>${esc(p.name)}</div><div class="badge">${p.score||0} pkt</div></div>`).join(''); const czar = players.find(p=>p.id===room?.czarId); czarNameEl.textContent = czar? czar.name : '—'; }
-  function renderSubmissions(){ const subs = room?.submissions||[]; answersEl.innerHTML = subs.map(s=>`<div class="answer ${room?.winner?.uid===s.uid?'selected':''}" data-uid="${s.uid}">${esc(s.text)}</div>`).join(''); if(room?.czarId=== (auth.currentUser||{}).uid){ answersEl.querySelectorAll('.answer').forEach(el=> el.onclick = ()=> chooseWinner(el.getAttribute('data-uid')) ); } else { answersEl.querySelectorAll('.answer').forEach(el=> el.onclick=null); } }
-  function renderHand(){ const hand = room?.myHand||[]; handEl.innerHTML = hand.map((t,i)=>`<div class="answer" data-i="${i}">${esc(t)}</div>`).join(''); handEl.querySelectorAll('.answer').forEach(el=> el.onclick = ()=> playCard(parseInt(el.getAttribute('data-i')))); }
+  /* ====== Render ====== */
+  function renderRoom(){
+    if(!room) return;
+    roundEl.textContent = room.round||0;
+    promptEl.textContent = room.prompt || '—';
+    const czar = (room.players||[]).find(p=>p.id===room.czarId);
+    czarNameEl.textContent = czar? czar.name : '—';
+  }
 
-  Object.defineProperty(window,'firebaseAuthUid',{get(){ return (auth&&auth.currentUser)?auth.currentUser.uid:null; }});
+  function renderPlayers(){
+    const players = room?.players || [];
+    const czarId = room?.czarId || null;
+    playersEl.innerHTML = players.map(p =>
+      `<div class="player ${p.id===czarId?'active':''}">${esc(p.name)}</div>`
+    ).join('');
+  }
+
+  function renderSubmissions(){
+    const subs = room?.submissions || [];
+    if(!subs.length){ answersEl.classList.add('hidden'); answersEl.innerHTML=''; return; }
+    answersEl.classList.remove('hidden');
+    answersEl.innerHTML = `<div class="small" style="margin-bottom:8px">Zagrania</div>` +
+      subs.map(s=>`<button class="card-btn ${room?.winner?.uid===s.uid?'selected':''}" data-uid="${s.uid}"><div class="fallback">${esc(s.text)}</div></button>`).join('');
+    if(room?.czarId===(auth.currentUser||{}).uid){
+      answersEl.querySelectorAll('.card-btn').forEach(el => el.onclick = ()=> chooseWinner(el.getAttribute('data-uid')));
+    }
+  }
+
+  // Podgląd karty na hover + przesunięcie czarnej karty
+  function renderHand(){
+    const hand = room?.myHand || [];
+    handEl.innerHTML = hand.map((t,i)=>`
+      <button class="card-btn" data-i="${i}">
+        <div class="fallback">${esc(t)}</div>
+      </button>`).join('');
+
+    const preview = $('#preview');
+    const previewCard = $('#previewCard');
+
+    handEl.querySelectorAll('.card-btn').forEach(el=>{
+      const i = parseInt(el.getAttribute('data-i'));
+      // klik = zagraj
+      el.onclick = ()=> playCard(i);
+      // hover = podgląd
+      el.addEventListener('mouseenter', ()=>{
+        const text = hand[i];
+        previewCard.innerHTML = `<div class="fallback">${esc(text)}</div>`;
+        document.body.classList.add('previewing');
+        preview.classList.remove('hidden');
+        requestAnimationFrame(()=> preview.classList.add('visible'));
+      });
+      el.addEventListener('mouseleave', ()=>{
+        document.body.classList.remove('previewing');
+        preview.classList.remove('visible');
+        setTimeout(()=> preview.classList.add('hidden'),180);
+      });
+    });
+  }
+
+  Object.defineProperty(window,'firebaseAuthUid',{get(){return (auth&&auth.currentUser)?auth.currentUser.uid:null;}});
 </script>
 </body>
 </html>
-
-
