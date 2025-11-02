@@ -197,6 +197,7 @@ button.ghost:hover {
 
     <div class="board">
       <aside class="ctrl">
+        <button id="btn-ready" class="ghost hidden">Następna runda</button>
         <div class="col">
           <div class="small">Pokój</div>
           <div class="row">
@@ -253,6 +254,7 @@ button.ghost:hover {
   $('#go-join').onclick   = ()=> show('join');
   $('#back1').onclick     = ()=> show('home');
   $('#back2').onclick     = ()=> show('home');
+  $('#btn-ready').onclick = () => readyForNextRound();
 
   let firebaseReady=false, me={id:null,name:null}, room=null;
   let unsubRoom=null, unsubPlayers=null, unsubSubs=null, unsubHand=null;
@@ -426,7 +428,35 @@ button.ghost:hover {
       await batch.commit();
     }catch(e){ warn('Błąd startu rundy: '+(e?.message||e)); }
   }
+  
+// --- Nowa logika: "Następna runda" ---
+async function readyForNextRound() {
+  if (!room) return;
+  const code = room.code;
+  const uid = auth.currentUser?.uid;
 
+  // Zaznacz gotowość gracza
+  await setDoc(doc(db, "rooms", code, "ready", uid), {
+    uid,
+    ready: true,
+    at: serverTimestamp()
+  });
+
+  // Sprawdź, czy wszyscy gracze są gotowi
+  const readySnap = await getDocs(collection(db, "rooms", code, "ready"));
+  const readyCount = readySnap.size;
+  const totalPlayers = room.players?.length || 0;
+
+  if (readyCount >= totalPlayers) {
+    // Wszyscy gotowi — usuń stare wpisy i rozpocznij kolejną rundę
+    const batch = writeBatch(db);
+    readySnap.forEach(d => batch.delete(doc(db, "rooms", code, "ready", d.id)));
+    await batch.commit();
+    startRound();
+  }
+}
+
+  
   async function playCard(index){
     try{
       if(!room || room.stage!=='playing') return;
@@ -471,6 +501,11 @@ button.ghost:hover {
     promptEl.innerHTML = `<div class="fallback">${esc(room.prompt || '—')}</div>`;
     const czar = (room.players||[]).find(p=>p.id===room.czarId);
     czarNameEl.textContent = czar? czar.name : '—';
+    // Pokazuj odpowiednie przyciski (host ma Start, reszta "Następna runda")
+const isHost = (auth.currentUser?.uid === room.hostId);
+$('#btn-start').classList.toggle('hidden', !isHost);
+$('#btn-ready').classList.toggle('hidden', isHost);
+
   }
 
   function renderPlayers(){
@@ -533,6 +568,7 @@ button.ghost:hover {
 </script>
 </body>
 </html>
+
 
 
 
