@@ -17,65 +17,82 @@
     /* ====== Reset & bazowe ====== */
     *{box-sizing:border-box}
     html,body{margin:0;background:#fff;color:#000;font-family:Inter,Arial,sans-serif}
-    .wrap{max-width:1280px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+    .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
     header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #000}
     .title{font-weight:800;font-size:18px}
     .hidden{display:none}
     .small{font-size:12px}
 
-    /* ====== Pasek graczy ====== */
+    /* ====== Pasek graczy (wyśrodkowany, prostokącik sędziego) ====== */
     .players-bar{
       position:sticky;top:8px;z-index:10;
-      display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:6px 0
+      display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 0 16px;
     }
     .player{
-      min-width:90px;height:22px;background:#fff;color:#000;
-      border:1px solid #000;border-radius:3px;display:flex;align-items:center;justify-content:center;
-      padding:0 8px;font-size:12px;line-height:1
+      position:relative;
+      min-width:100px;height:28px;background:#fff;color:#000;
+      border:1px solid #000;border-radius:4px;display:flex;align-items:center;justify-content:center;
+      padding:0 10px;font-size:13px;line-height:1
     }
-    .player.active{background:#000;color:#fff;box-shadow:0 0 12px rgba(0,0,0,.30)}
+    /* czarny prostokąt POD sędzią */
+    .player.active::after{
+      content:""; position:absolute; left:50%; transform:translateX(-50%); bottom:-10px;
+      width:44px; height:8px; background:#000; border-radius:2px;
+    }
 
-    /* ====== Plansza 3 kolumny: lewy panel / czarna karta / ręka ====== */
+    /* ====== Plansza: lewy panel / czarna karta / ręka ====== */
     .board{
-      display:grid;grid-template-columns: 230px 1fr 38vw;gap:20px;align-items:start;min-height:70vh
+      display:grid;
+      grid-template-columns: 260px min(34vw,560px) min(36vw,620px);
+      gap:48px;
+      align-items:start;
+      justify-content:center; /* CAŁA siatka wyśrodkowana */
+      min-height:72vh;
     }
 
     /* Lewy panel – przyciski i info pokoju */
     .ctrl{
-      border:1px solid #000;border-radius:3px;padding:12px;background:#fff;position:sticky;top:46px
+      border:1px solid #000;border-radius:6px;padding:14px;background:#fff;position:sticky;top:56px
     }
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .col{display:flex;flex-direction:column;gap:6px}
-    input{border:1px solid #000;border-radius:3px;padding:8px 10px}
-    button{border:1px solid #000;border-radius:3px;padding:8px 12px;font-weight:700;background:#000;color:#fff;cursor:pointer}
+    input{border:1px solid #000;border-radius:6px;padding:8px 10px}
+    button{border:1px solid #000;border-radius:6px;padding:10px 14px;font-weight:700;background:#000;color:#fff;cursor:pointer}
     button.ghost{background:#fff;color:#000}
-    .badge{display:inline-block;border:1px solid #000;border-radius:999px;padding:2px 8px}
+    .badge{display:inline-block;border:1px solid #000;border-radius:999px;padding:4px 10px}
 
-    /* Czarna karta (prompt) – centrum */
+    /* Czarna karta (prompt) – centrum, z obrazkiem lub fallbackiem */
     .prompt-wrap{display:flex;align-items:center;justify-content:center;min-height:60vh}
     .prompt{
-      width:min(32vw,520px);aspect-ratio:2.5/3.5;background:#000;color:#fff;
-      border:1px solid #000;border-radius:3px;display:flex;align-items:center;justify-content:center;
-      text-align:center;padding:18px;font-size:20px;transition:transform .22s ease,opacity .22s ease
+      width:min(34vw,560px);aspect-ratio:2.5/3.5;background:#000;color:#fff;
+      border:1px solid #000;border-radius:8px;display:flex;align-items:center;justify-content:center;
+      text-align:center;padding:18px;font-size:20px;transition:transform .22s ease,opacity .22s ease;overflow:hidden
     }
+    .prompt img{display:block;width:100%;height:100%;object-fit:cover}
+    .prompt .fallback{padding:18px}
 
     /* Panel ręki gracza – prawa kolumna */
-    .hand{border:1px solid #000;border-radius:3px;padding:12px;background:#fff}
-    .hand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .hand{border:1px solid #000;border-radius:8px;padding:14px;background:#fff}
+    .hand-grid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:12px;
+    }
+    @media (max-width:1200px){ .hand-grid{grid-template-columns: repeat(3, 1fr);} }
     .card-btn{
-      border:1px solid #000;border-radius:3px;background:#fff;cursor:pointer;padding:0;
+      border:1px solid #000;border-radius:8px;background:#fff;cursor:pointer;padding:0;
       width:100%;aspect-ratio:2.5/3.5;display:flex;align-items:center;justify-content:center;overflow:hidden;
       transition:transform .15s ease
     }
     .card-btn:hover{transform:translateY(-2px)}
     .card-btn img{width:100%;height:100%;object-fit:cover;display:block}
-    .card-btn .fallback{padding:8px;font-size:12px;text-align:center}
+    .card-btn .fallback{padding:10px;font-size:12px;text-align:center}
 
     /* Podgląd karty na hover */
     .preview{position:fixed;inset:0;pointer-events:none;z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.98);transition:opacity .18s ease,transform .18s ease}
     .preview.visible{opacity:1;transform:scale(1)}
     .preview-card{
-      width:min(50vw,620px);aspect-ratio:2.5/3.5;border:1px solid #000;border-radius:3px;background:#fff;
+      width:min(50vw,640px);aspect-ratio:2.5/3.5;border:1px solid #000;border-radius:8px;background:#fff;
       box-shadow:0 10px 30px rgba(0,0,0,.20);overflow:hidden;display:flex;align-items:center;justify-content:center
     }
     .preview-card img{width:100%;height:100%;object-fit:cover;display:block}
@@ -83,11 +100,11 @@
 
     /* Efekt globalny podczas podglądu */
     body.previewing .prompt{transform:translateX(-10vw) scale(.88)}
-    body.previewing .players-bar{gap:6px}
+    body.previewing .players-bar{gap:10px}
 
     /* Sekcja start/join */
-    .card{border:1px solid #000;border-radius:3px;padding:12px;background:#fff}
-    .warn{border:1px solid #000;border-radius:3px;padding:8px;background:#fff1f1;color:#000}
+    .card{border:1px solid #000;border-radius:8px;padding:14px;background:#fff}
+    .warn{border:1px solid #000;border-radius:6px;padding:8px;background:#fff1f1;color:#000}
   </style>
 </head>
 <body>
@@ -97,7 +114,7 @@
     <div class="small" id="alert" class="warn hidden"></div>
   </header>
 
-  <!-- Ekran startowy -->
+  <!-- Ekran startowy (bez zmian) -->
   <section id="screen-home" class="card">
     <div class="row">
       <button id="go-create">Stwórz lobby</button>
@@ -105,7 +122,7 @@
     </div>
   </section>
 
-  <!-- Tworzenie lobby -->
+  <!-- Tworzenie lobby (bez zmian) -->
   <section id="screen-create" class="card hidden">
     <div class="col" style="max-width:480px">
       <label class="small">Twój nick</label>
@@ -117,7 +134,7 @@
     </div>
   </section>
 
-  <!-- Dołączanie -->
+  <!-- Dołączanie (bez zmian) -->
   <section id="screen-join" class="card hidden">
     <div class="col" style="max-width:480px">
       <label class="small">Kod pokoju</label>
@@ -157,19 +174,19 @@
         </div>
       </aside>
 
-      <!-- Środek: czarna karta -->
+      <!-- Środek: czarna karta (obrazek lub fallback tekstowy) -->
       <main class="prompt-wrap">
-        <div id="prompt" class="prompt">—</div>
+        <div id="prompt" class="prompt"><div class="fallback">—</div></div>
       </main>
 
-      <!-- Prawa: ręka gracza -->
+      <!-- Prawa: ręka gracza (karty jako PNG lub tekst) -->
       <aside class="hand">
         <div class="small" style="margin-bottom:8px">Twoja ręka</div>
         <div id="hand" class="hand-grid"></div>
       </aside>
     </div>
 
-    <!-- Miejsce na zagrane odpowiedzi (prosto) -->
+    <!-- Miejsce na zagrane odpowiedzi -->
     <div id="answers" class="card hidden"></div>
   </section>
 </div>
@@ -247,13 +264,16 @@
     "Mój sekret na udaną randkę: _________.",
   ];
   const DEFAULT_ANSWERS = [
-    "pół kilo żelatyny","księdza na hulajnodze elektrycznej","martwego gołębia w plecaku","mój plan na życie","znudzonego nauczyciela WF-u","sandacz po litewsku","szósty kubek kawy","kredyt na 30 lat"
+    "pół kilo żelatyny","księdza na hulajnodze elektrycznej","martwego gołębia w plecaku","mój plan na życie","znudzonego nauczyciela WF-u","sandacz po litewsku","szósty kubek kawy","kredyt na 30 lat",
+    // przykładowy obrazek: możesz podać pełny URL PNG i karta wyrenderuje się jako <img>
+    "https://upload.wikimedia.org/wikipedia/commons/3/3f/Placeholder_view_vector.svg"
   ];
 
   /* ====== Helpers ====== */
   function makeCode(len=4){ const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<len;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
   function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
   function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+  const looksLikeImage = (t)=> typeof t==='string' && /\.(png|jpg|jpeg|webp|gif)$/i.test(t) || /^https?:\/\/.+\.(png|jpg|jpeg|webp|gif)(\?.*)?$/i.test(t);
 
   /* ====== UI -> akcje ====== */
   $('#btn-create').onclick= ()=> firebaseReady? createLobby(): warn('Backend niegotowy. Odśwież.');
@@ -274,7 +294,7 @@
       const roomRef = doc(db,'rooms',code);
       await setDoc(roomRef,{
         code, createdAt: serverTimestamp(), stage:'lobby', round:0,
-        czarId:null, czarIdx:0, prompt:'', winner:null,
+        czarId:null, czarIdx:0, prompt:'', promptImg:'', winner:null,
         deckQ: shuffle([...DEFAULT_QUESTIONS]),
         deckA: shuffle([...DEFAULT_ANSWERS]),
         discardQ:[], discardA:[],
@@ -380,7 +400,7 @@
       batch.update(doc(db,'rooms',code),{
         stage:'playing', round:(room.round||0)+1,
         czarId: czar.id, czarIdx: (czarIdx+1)%players.length,
-        prompt, deckQ, discardQ, deckA, discardA, winner:null
+        prompt, promptImg:'', deckQ, discardQ, deckA, discardA, winner:null
       });
 
       await batch.commit();
@@ -428,7 +448,13 @@
   function renderRoom(){
     if(!room) return;
     roundEl.textContent = room.round||0;
-    promptEl.textContent = room.prompt || '—';
+
+    // Czarna karta: jeżeli masz PNG/URL w room.promptImg — pokaż obrazek, inaczej tekst.
+    const hasImg = room.promptImg && typeof room.promptImg==='string';
+    promptEl.innerHTML = hasImg
+      ? `<img alt="czarna karta" src="${room.promptImg}">`
+      : `<div class="fallback">${esc(room.prompt || '—')}</div>`;
+
     const czar = (room.players||[]).find(p=>p.id===room.czarId);
     czarNameEl.textContent = czar? czar.name : '—';
   }
@@ -446,31 +472,37 @@
     if(!subs.length){ answersEl.classList.add('hidden'); answersEl.innerHTML=''; return; }
     answersEl.classList.remove('hidden');
     answersEl.innerHTML = `<div class="small" style="margin-bottom:8px">Zagrania</div>` +
-      subs.map(s=>`<button class="card-btn ${room?.winner?.uid===s.uid?'selected':''}" data-uid="${s.uid}"><div class="fallback">${esc(s.text)}</div></button>`).join('');
+      subs.map(s=>{
+        const isImg = looksLikeImage(s.text);
+        const inner = isImg ? `<img alt="" src="${s.text}">` : `<div class="fallback">${esc(s.text)}</div>`;
+        return `<button class="card-btn ${room?.winner?.uid===s.uid?'selected':''}" data-uid="${s.uid}">${inner}</button>`;
+      }).join('');
     if(room?.czarId===(auth.currentUser||{}).uid){
       answersEl.querySelectorAll('.card-btn').forEach(el => el.onclick = ()=> chooseWinner(el.getAttribute('data-uid')));
     }
   }
 
-  // Podgląd karty na hover + przesunięcie czarnej karty
+  // Ręka gracza: obsługa PNG albo tekstu
   function renderHand(){
     const hand = room?.myHand || [];
-    handEl.innerHTML = hand.map((t,i)=>`
-      <button class="card-btn" data-i="${i}">
-        <div class="fallback">${esc(t)}</div>
-      </button>`).join('');
+    handEl.innerHTML = hand.map((t,i)=>{
+      const isImg = looksLikeImage(t);
+      const inner = isImg ? `<img alt="" src="${t}">` : `<div class="fallback">${esc(t)}</div>`;
+      return `<button class="card-btn" data-i="${i}">${inner}</button>`;
+    }).join('');
 
     const preview = $('#preview');
     const previewCard = $('#previewCard');
 
     handEl.querySelectorAll('.card-btn').forEach(el=>{
       const i = parseInt(el.getAttribute('data-i'));
-      // klik = zagraj
       el.onclick = ()=> playCard(i);
-      // hover = podgląd
       el.addEventListener('mouseenter', ()=>{
-        const text = hand[i];
-        previewCard.innerHTML = `<div class="fallback">${esc(text)}</div>`;
+        const t = hand[i];
+        const isImg = looksLikeImage(t);
+        previewCard.innerHTML = isImg
+          ? `<img alt="" src="${t}">`
+          : `<div class="fallback">${esc(t)}</div>`;
         document.body.classList.add('previewing');
         preview.classList.remove('hidden');
         requestAnimationFrame(()=> preview.classList.add('visible'));
@@ -484,6 +516,12 @@
   }
 
   Object.defineProperty(window,'firebaseAuthUid',{get(){return (auth&&auth.currentUser)?auth.currentUser.uid:null;}});
+
+  /* ====== Szybki podgląd – wymuś ekran gry z układem (do dev) ======
+     Odkomentuj dwie linie poniżej, jeśli chcesz zobaczyć układ bez łączenia.
+  */
+  // show('room');
+  // playersEl.innerHTML = ['gracz','gracz2','gracz3','gracz5','gracz6','gracz7','gracz8'].map((n,i)=>`<div class="player ${i===5?'active':''}">${n}</div>`).join('');
 </script>
 </body>
 </html>
