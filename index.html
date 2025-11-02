@@ -1,42 +1,479 @@
-/* --- BOARD: dopnij centrowanie i uporządkuj gapy --- */
-.board{
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;  /* środkowa kolumna na kartę */
-  column-gap: clamp(16px, 4vw, 40px);   /* responsywny odstęp poziomy */
-  row-gap: 24px;
-  justify-items: center;                /* zawartość kolumn wyrównana do środka */
-  align-items: start;
-  min-height: 72vh;
-}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self' https://www.gstatic.com https://www.gstatic.com/firebasejs/ 'unsafe-inline';
+                 connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseinstallations.googleapis.com data: blob:;
+                 img-src 'self' data: https:;
+                 style-src 'self' 'unsafe-inline';
+                 font-src 'self' data:;" />
+  <title>Karty Dżentelmenów — Online</title>
 
-/* --- PANELE BOCZNE: wyrównane szerokości --- */
-.ctrl,
-.hand{
-  width: 280px;                         /* ta sama szerokość po obu stronach */
-  border: 1px solid #0f0f0f;
-  border-radius: 1px;
-  padding: 14px;
-  background: #f1f1f1;
-}
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#f1f1f1;color:#0f0f0f;font-family:Inter,Arial,sans-serif}
+    .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
+    header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #0f0f0f}
+    .title{font-weight:800;font-size:18px}
+    .hidden{display:none}
+    .small{font-size:12px}
 
-.ctrl{ justify-self: end; position: sticky; top: 56px; }
-.hand{ justify-self: start; }
+    /* ===== Pasek graczy: nick NAD prostokątem ===== */
+    .players-bar{
+      position:sticky;top:8px;z-index:10;
+      display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;padding:10px 0 22px;
+    }
+    .player{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:100px}
+    .player-name{font-size:13px;font-weight:600;line-height:1}
+    .player-slot{width:100px;height:22px;border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1}
+    .player.active .player-slot{background:#0f0f0f}
 
-/* --- KARTA: zostaje jak była (środek kolumny 2) --- */
-.prompt-wrap{
-  grid-column: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 62vh;
-}
+    /* ===== Plansza: 1fr / auto / 1fr => karta dokładnie pośrodku ===== */
+    .board{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap:48px;
+      align-items:start;
+      min-height:72vh;
+    }
 
-.prompt{
-  width: min(26vw, 420px);
-  aspect-ratio: 2.5/3.5;
-  background: #0f0f0f; color: #f1f1f1;
-  border: 1px solid #0f0f0f; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; text-align: center;
-  padding: 18px; font-size: 20px; overflow: hidden;
-  transition: transform .22s ease, opacity .22s ease;
-}
+    /* panele boczne symetryczne */
+    .ctrl{justify-self:end;width:280px;border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1;position:sticky;top:56px}
+    .hand{justify-self:start;width:min(36vw,620px);border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px}
+    input{border:1px solid #0f0f0f;border-radius:1px;padding:8px 10px}
+    button{border:1px solid #0f0f0f;border-radius:1px;padding:10px 14px;font-weight:700;background:#0f0f0f;color:#f1f1f1;cursor:pointer}
+    button.ghost{background:#f1f1f1;color:#0f0f0f}
+    .badge{display:inline-block;border:1px solid #0f0f0f;border-radius:1px;padding:4px 10px}
+
+    /* ===== Czarna karta — mniejsza i centralna (zachowuje większe zaokrąglenie) ===== */
+    .prompt-wrap{
+      grid-column:2;
+      display:flex;align-items:center;justify-content:center;
+      min-height:62vh;
+    }
+    .prompt{
+      width:min(26vw,420px);
+      aspect-ratio:2.5/3.5;
+      background:#0f0f0f;color:#f1f1f1;border:1px solid #0f0f0f;border-radius:8px; /* NIE zmieniamy */
+      display:flex;align-items:center;justify-content:center;text-align:center;
+      padding:18px;font-size:20px;overflow:hidden;
+      transition:transform .22s ease,opacity .22s ease;
+    }
+    .prompt img{display:block;width:100%;height:100%;object-fit:cover}
+    .prompt .fallback{padding:18px}
+
+    /* ===== Ręka ===== */
+    .hand-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    @media (max-width:1200px){ .hand-grid{grid-template-columns:repeat(3,1fr)} }
+    .card-btn{
+      border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1;cursor:pointer;padding:0;
+      width:100%;aspect-ratio:2.5/3.5;display:flex;align-items:center;justify-content:center;overflow:hidden;
+      transition:transform .15s ease
+    }
+    .card-btn:hover{transform:translateY(-2px)}
+    .card-btn img{width:100%;height:100%;object-fit:cover;display:block}
+    .card-btn .fallback{padding:10px;font-size:12px;text-align:center}
+
+    /* Podgląd */
+    .preview{position:fixed;inset:0;pointer-events:none;z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.98);transition:opacity .18s ease,transform .18s ease}
+    .preview.visible{opacity:1;transform:scale(1)}
+    .preview-card{
+      width:min(50vw,640px);aspect-ratio:2.5/3.5;border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1;
+      box-shadow:0 10px 30px rgba(0,0,0,.20);overflow:hidden;display:flex;align-items:center;justify-content:center
+    }
+    .preview-card img{width:100%;height:100%;object-fit:cover;display:block}
+    .preview-card .fallback{padding:16px;font-size:18px;text-align:center;color:#0f0f0f}
+
+    body.previewing .prompt{transform:translateX(-6vw) scale(.9)}
+    .card{border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1}
+    .warn{border:1px solid #0f0f0f;border-radius:1px;padding:8px;background:#fff1f1;color:#0f0f0f}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">Karty Dżentelmenów — Online</div>
+    <div class="small" id="alert" class="warn hidden"></div>
+  </header>
+
+  <!-- Start -->
+  <section id="screen-home" class="card">
+    <div class="row">
+      <button id="go-create">Stwórz lobby</button>
+      <button id="go-join" class="ghost">Dołącz do gry</button>
+    </div>
+  </section>
+
+  <!-- Tworzenie -->
+  <section id="screen-create" class="card hidden">
+    <div class="col" style="max-width:480px">
+      <label class="small">Twój nick</label>
+      <input id="create-nick" placeholder="np. Tymianek" />
+      <div class="row">
+        <button id="btn-create">Utwórz lobby</button>
+        <button class="ghost" id="back1">Wróć</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dołączanie -->
+  <section id="screen-join" class="card hidden">
+    <div class="col" style="max-width:480px">
+      <label class="small">Kod pokoju</label>
+      <input id="join-code" placeholder="np. R4F7" />
+      <label class="small">Twój nick</label>
+      <input id="join-nick" placeholder="np. Gość" />
+      <div class="row">
+        <button id="btn-join">Dołącz</button>
+        <button class="ghost" id="back2">Wróć</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Rozgrywka -->
+  <section id="screen-room" class="hidden">
+    <div id="players" class="players-bar"></div>
+
+    <div class="board">
+      <aside class="ctrl">
+        <div class="col">
+          <div class="small">Pokój</div>
+          <div class="row">
+            <div class="badge">Kod: <b id="room-code">—</b></div>
+            <button id="copy-code" class="ghost">Kopiuj</button>
+          </div>
+          <div class="small" style="margin-top:8px">Sterowanie</div>
+          <div class="row">
+            <button id="btn-start">Start rundy</button>
+            <button id="btn-leave" class="ghost">Wyjdź</button>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <div class="badge">Runda: <b id="round-no">0</b></div>
+            <div class="badge">Sędzia: <b id="czar-name">—</b></div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="prompt-wrap">
+        <div id="prompt" class="prompt"><div class="fallback">—</div></div>
+      </main>
+
+      <aside class="hand">
+        <div class="small" style="margin-bottom:8px">Twoja ręka</div>
+        <div id="hand" class="hand-grid"></div>
+      </aside>
+    </div>
+
+    <div id="answers" class="card hidden"></div>
+  </section>
+</div>
+
+<div id="preview" class="preview hidden" aria-hidden="true">
+  <div id="previewCard" class="preview-card"></div>
+</div>
+
+<script type="module">
+  const $ = s => document.querySelector(s);
+  const screens = { home: $('#screen-home'), create: $('#screen-create'), join: $('#screen-join'), room: $('#screen-room') };
+  const playersEl = $('#players');
+  const promptEl  = $('#prompt');
+  const answersEl = $('#answers');
+  const handEl    = $('#hand');
+  const roundEl   = $('#round-no');
+  const czarNameEl= $('#czar-name');
+  const roomCodeEl= $('#room-code');
+  const alertBox  = $('#alert');
+
+  function show(name){ Object.values(screens).forEach(x=>x.classList.add('hidden')); screens[name].classList.remove('hidden'); }
+  function warn(msg){ alertBox.textContent = msg; alertBox.classList.remove('hidden'); console.error(msg); }
+  function nowarn(){ alertBox.classList.add('hidden'); alertBox.textContent=''; }
+
+  $('#go-create').onclick = ()=> show('create');
+  $('#go-join').onclick   = ()=> show('join');
+  $('#back1').onclick     = ()=> show('home');
+  $('#back2').onclick     = ()=> show('home');
+
+  let firebaseReady=false, me={id:null,name:null}, room=null;
+  let unsubRoom=null, unsubPlayers=null, unsubSubs=null, unsubHand=null;
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, collection, getDocs, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC6emXNbCXSwx2xCAaUnQw9YR29Zzg1JzU",
+    authDomain: "karty-dzentelmenow.firebaseapp.com",
+    projectId: "karty-dzentelmenow",
+    storageBucket: "karty-dzentelmenow.appspot.com",
+    messagingSenderId: "1024966784216",
+    appId: "1:1024966784216:web:9eecee00ee849f079313ad"
+  };
+
+  let app, auth, db;
+  try{
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    await setPersistence(auth, browserLocalPersistence);
+    await signInAnonymously(auth);
+    db = getFirestore(app);
+    firebaseReady = true; nowarn();
+  }catch(e){
+    console.error("AUTH ERROR:", e);
+    warn('Firebase nie działa: ' + (e?.code || e?.message || e));
+  }
+
+  const DEFAULT_QUESTIONS = [
+    "_________ to najlepszy sposób na rozpoczęcie dnia.",
+    "W piekle czeka na mnie kara za _________.",
+    "Kiedy byłem dzieckiem, najbardziej bałem się _________.",
+    "Mój sekret na udaną randkę: _________.",
+  ];
+  const DEFAULT_ANSWERS = [
+    "pół kilo żelatyny","księdza na hulajnodze elektrycznej","martwego gołębia w plecaku","mój plan na życie","znudzonego nauczyciela WF-u","sandacz po litewsku","szósty kubek kawy","kredyt na 30 lat"
+  ];
+
+  function makeCode(len=4){ const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<len;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+  function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+  $('#btn-create').onclick= ()=> firebaseReady? createLobby(): warn('Backend niegotowy. Odśwież.');
+  $('#btn-join').onclick  = ()=> firebaseReady? joinLobby()  : warn('Backend niegotowy.');
+  $('#btn-start').onclick = ()=> firebaseReady? startRound() : warn('Backend niegotowy.');
+  $('#btn-leave').onclick = ()=> firebaseReady? leaveRoom()  : show('home');
+  $('#copy-code').onclick = ()=> copyCode();
+
+  show('home');
+
+  async function createLobby(){
+    try{
+      const nick = $('#create-nick').value.trim() || 'Gracz';
+      const code = makeCode();
+      const uid  = auth.currentUser.uid; me = {id: uid, name: nick};
+
+      const roomRef = doc(db,'rooms',code);
+      await setDoc(roomRef,{
+        code, createdAt: serverTimestamp(), stage:'lobby', round:0,
+        czarId:null, czarIdx:0, prompt:'', winner:null,
+        deckQ: shuffle([...DEFAULT_QUESTIONS]),
+        deckA: shuffle([...DEFAULT_ANSWERS]),
+        discardQ:[], discardA:[],
+        hostId: uid
+      });
+      await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), isOnline:true });
+      await setDoc(doc(db,'rooms',code,'hands',uid),{ cards:[] });
+
+      await enterRoom(code);
+    }catch(e){ warn('Błąd tworzenia pokoju: '+(e?.message||e)); }
+  }
+
+  async function joinLobby(){
+    try{
+      const code = ($('#join-code').value||'').trim().toUpperCase();
+      const nick = ($('#join-nick').value||'').trim() || 'Gość';
+      if(!code) return warn('Podaj kod.');
+      const roomRef = doc(db,'rooms',code);
+      if(!(await getDoc(roomRef)).exists()) return warn('Nie ma takiego pokoju.');
+
+      const uid = auth.currentUser.uid; me = {id: uid, name: nick};
+      await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), isOnline:true });
+      const handRef = doc(db,'rooms',code,'hands',uid);
+      if(!(await getDoc(handRef)).exists()) await setDoc(handRef,{cards:[]});
+
+      await enterRoom(code);
+    }catch(e){ warn('Błąd dołączania: '+(e?.message||e)); }
+  }
+
+  async function enterRoom(code){ subscribeRoom(code); show('room'); }
+
+  function subscribeRoom(code){
+    roomCodeEl.textContent = code;
+    unsubRoom?.(); unsubPlayers?.(); unsubSubs?.(); unsubHand?.();
+
+    const roomRef = doc(db,'rooms',code);
+    unsubRoom = onSnapshot(roomRef,(snap)=>{ room = snap.data(); renderRoom(); });
+
+    const playersCol = collection(db,'rooms',code,'players');
+    unsubPlayers = onSnapshot(playersCol,(snap)=>{
+      room.players = []; snap.forEach(d=>room.players.push({id:d.id,...d.data()}));
+      renderPlayers();
+    });
+
+    const subsCol = collection(db,'rooms',code,'submissions');
+    unsubSubs = onSnapshot(subsCol,(snap)=>{
+      room.submissions = []; snap.forEach(d=>room.submissions.push({id:d.id,...d.data()}));
+      renderSubmissions();
+    });
+
+    const handRef = doc(db,'rooms',code,'hands',(auth.currentUser||{}).uid||'');
+    unsubHand = onSnapshot(handRef,(snap)=>{ room.myHand = snap.data()?.cards || []; renderHand(); });
+  }
+
+  async function leaveRoom(){
+    try{
+      if(!room) { show('home'); return; }
+      const code = room.code; const uid = (auth.currentUser||{}).uid;
+      await Promise.all([
+        deleteDoc(doc(db,'rooms',code,'players',uid)),
+        deleteDoc(doc(db,'rooms',code,'hands',uid)),
+        deleteDoc(doc(db,'rooms',code,'submissions',uid)).catch(()=>{})
+      ]);
+      unsubRoom?.(); unsubPlayers?.(); unsubSubs?.(); unsubHand?.();
+      room=null; show('home');
+    }catch(e){ warn('Błąd opuszczania pokoju: '+(e?.message||e)); }
+  }
+
+  async function startRound(){
+    try{
+      if(!room) return;
+      if(((auth.currentUser||{}).uid)!==room.hostId) return warn('Tylko host może rozpocząć rundę.');
+      const code = room.code;
+
+      const playersSnap = await getDocs(collection(db,'rooms',code,'players'));
+      const players = []; playersSnap.forEach(d=>players.push({id:d.id,...d.data()}));
+      if(players.length<3) return warn('Potrzeba min. 3 graczy.');
+
+      const czarIdx = room.czarIdx||0; const czar = players[czarIdx % players.length];
+
+      let deckQ = [...(room.deckQ||[])]; let discardQ = [...(room.discardQ||[])];
+      if(!deckQ.length){ deckQ = shuffle(discardQ); discardQ = []; }
+      if(!deckQ.length) return warn('Brak kart pytań.');
+      const prompt = deckQ.shift();
+
+      let deckA = [...(room.deckA||[])]; let discardA = [...(room.discardA||[])];
+      if(deckA.length < players.length*3 && discardA.length) { deckA = deckA.concat(shuffle(discardA)); discardA = []; }
+
+      const batch = writeBatch(db);
+
+      for(const p of players){
+        const hRef = doc(db,'rooms',code,'hands',p.id);
+        const hSnap = await getDoc(hRef);
+        const cards = hSnap.exists()? (hSnap.data().cards||[]) : [];
+        const need = Math.max(0, 7 - cards.length);
+        for(let i=0;i<need;i++){ if(!deckA.length) break; cards.push(deckA.shift()); }
+        batch.set(hRef,{cards});
+      }
+
+      const subsSnap = await getDocs(collection(db,'rooms',code,'submissions'));
+      subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)));
+
+      batch.update(doc(db,'rooms',code),{
+        stage:'playing', round:(room.round||0)+1,
+        czarId: czar.id, czarIdx: (czarIdx+1)%players.length,
+        prompt, deckQ, discardQ, deckA, discardA, winner:null
+      });
+
+      await batch.commit();
+    }catch(e){ warn('Błąd startu rundy: '+(e?.message||e)); }
+  }
+
+  async function playCard(index){
+    try{
+      if(!room || room.stage!=='playing') return;
+      if(room.czarId===(auth.currentUser||{}).uid) return warn('Sędzia nie zagrywa.');
+      const code = room.code;
+      const hRef = doc(db,'rooms',code,'hands',(auth.currentUser||{}).uid||'');
+      const hSnap = await getDoc(hRef);
+      const cards = hSnap.data()?.cards||[];
+      const card = cards[index]; if(!card) return;
+
+      await setDoc(doc(db,'rooms',code,'submissions',(auth.currentUser||{}).uid||''),{
+        uid:(auth.currentUser||{}).uid, name:me.name, text:card, at:serverTimestamp()
+      });
+
+      cards.splice(index,1); await updateDoc(hRef,{cards});
+    }catch(e){ warn('Błąd zagrania karty: '+(e?.message||e)); }
+  }
+
+  async function chooseWinner(uid){
+    try{
+      if(room.czarId!==(auth.currentUser||{}).uid) return;
+      const code = room.code;
+      const subRef = doc(db,'rooms',code,'submissions',uid);
+      const subSnap = await getDoc(subRef); if(!subSnap.exists()) return;
+      const winText = subSnap.data().text;
+
+      const pRef = doc(db,'rooms',code,'players',uid);
+      const pSnap = await getDoc(pRef); const score = (pSnap.data()?.score||0)+1;
+
+      const batch = writeBatch(db);
+      batch.update(doc(db,'rooms',code),{ winner:{uid, text:winText} });
+      batch.update(pRef,{score}); await batch.commit();
+    }catch(e){ warn('Błąd wyboru zwycięzcy: '+(e?.message||e)); }
+  }
+
+  function copyCode(){ if(!room?.code) return; navigator.clipboard.writeText(room.code).catch(()=>{}); }
+
+  /* Render */
+  function renderRoom(){
+    if(!room) return;
+    roundEl.textContent = room.round||0;
+    promptEl.innerHTML = `<div class="fallback">${esc(room.prompt || '—')}</div>`;
+    const czar = (room.players||[]).find(p=>p.id===room.czarId);
+    czarNameEl.textContent = czar? czar.name : '—';
+  }
+
+  function renderPlayers(){
+    const players = room?.players || [];
+    const czarId = room?.czarId || null;
+    playersEl.innerHTML = players.map(p =>
+      `<div class="player ${p.id===czarId?'active':''}">
+         <div class="player-name">${esc(p.name)}</div>
+         <div class="player-slot" aria-hidden="true"></div>
+       </div>`
+    ).join('');
+  }
+
+  function renderSubmissions(){
+    const subs = room?.submissions || [];
+    if(!subs.length){ answersEl.classList.add('hidden'); answersEl.innerHTML=''; return; }
+    answersEl.classList.remove('hidden');
+    answersEl.innerHTML = `<div class="small" style="margin-bottom:8px">Zagrania</div>` +
+      subs.map(s=>`<button class="card-btn ${room?.winner?.uid===s.uid?'selected':''}" data-uid="${s.uid}"><div class="fallback">${esc(s.text)}</div></button>`).join('');
+    if(room?.czarId===(auth.currentUser||{}).uid){
+      answersEl.querySelectorAll('.card-btn').forEach(el => el.onclick = ()=> chooseWinner(el.getAttribute('data-uid')));
+    }
+  }
+
+  function renderHand(){
+    const hand = room?.myHand || [];
+    handEl.innerHTML = hand.map((t,i)=>`
+      <button class="card-btn" data-i="${i}">
+        <div class="fallback">${esc(t)}</div>
+      </button>`).join('');
+
+    const preview = $('#preview');
+    const previewCard = $('#previewCard');
+
+    handEl.querySelectorAll('.card-btn').forEach(el=>{
+      const i = parseInt(el.getAttribute('data-i'));
+      el.onclick = ()=> playCard(i);
+      el.addEventListener('mouseenter', ()=>{
+        const text = hand[i];
+        previewCard.innerHTML = `<div class="fallback">${esc(text)}</div>`;
+        document.body.classList.add('previewing');
+        preview.classList.remove('hidden');
+        requestAnimationFrame(()=> preview.classList.add('visible'));
+      });
+      el.addEventListener('mouseleave', ()=>{
+        document.body.classList.remove('previewing');
+        preview.classList.remove('visible');
+        setTimeout(()=> preview.classList.add('hidden'),180);
+      });
+    });
+  }
+
+  Object.defineProperty(window,'firebaseAuthUid',{get(){return (auth&&auth.currentUser)?auth.currentUser.uid:null;}});
+
+  // Dev-podgląd:
+  // show('room');
+  // (function(){const names=['gracz','gracz2','gracz3','gracz5','gracz6','gracz7','gracz8'];
+  //   playersEl.innerHTML = names.map((n,i)=>`<div class="player ${i===5?'active':''}"><div class="player-name">${n}</div><div class="player-slot"></div></div>`).join('');
+  // })();
+</script>
+</body>
+</html>
