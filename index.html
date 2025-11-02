@@ -50,8 +50,30 @@
     .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .col{display:flex;flex-direction:column;gap:6px}
     input{border:1px solid #000;border-radius:6px;padding:8px 10px}
-    button{border:1px solid #000;border-radius:6px;padding:10px 14px;font-weight:700;background:#000;color:#fff;cursor:pointer}
-    button.ghost{background:#fff;color:#000}
+   button {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: #000;
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+button:hover {
+  background: #222;
+}
+button.ghost {
+  background: #fff;
+  color: #000;
+}
+button.ghost:hover {
+  background: #e8e8e8;
+}
+
     .badge{display:inline-block;border:1px solid #000;border-radius:999px;padding:4px 10px}
 
     /* ===== Czarna karta — mniejsza i dokładnie wycentrowana ===== */
@@ -486,3 +508,4 @@
 </script>
 </body>
 </html>
+
