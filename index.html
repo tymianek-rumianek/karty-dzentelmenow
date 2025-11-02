@@ -14,9 +14,9 @@
 
   <style>
     *{box-sizing:border-box}
-    html,body{margin:0;background:#f1f1f1;color:#0f0f0f;font-family:Inter,Arial,sans-serif}
+    html,body{margin:0;background:#fff;color:#000;font-family:Inter,Arial,sans-serif}
     .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-    header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #0f0f0f}
+    header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #000}
     .title{font-weight:800;font-size:18px}
     .hidden{display:none}
     .small{font-size:12px}
@@ -26,60 +26,56 @@
       position:sticky;top:8px;z-index:10;
       display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;padding:10px 0 22px;
     }
-    .player{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:100px}
+    .player{
+      display:flex;flex-direction:column;align-items:center;gap:6px;min-width:100px
+    }
     .player-name{font-size:13px;font-weight:600;line-height:1}
-    .player-slot{width:100px;height:22px;border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1}
-    .player.active .player-slot{background:#0f0f0f}
+    .player-slot{
+      width:100px;height:22px;border:1px solid #000;border-radius:4px;background:#fff
+    }
+    .player.active .player-slot{background:#000}
 
-/* --- BOARD: dopnij centrowanie i uporządkuj gapy --- */
-.board{
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;  /* środkowa kolumna na kartę */
-  column-gap: clamp(16px, 4vw, 40px);   /* responsywny odstęp poziomy */
-  row-gap: 24px;
-  justify-items: center;                /* zawartość kolumn wyrównana do środka */
-  align-items: start;
-  min-height: 72vh;
-}
+    /* ===== Plansza: 1fr / auto / 1fr => karta jest idealnie pośrodku ===== */
+    .board{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap:48px;
+      align-items:start;
+      min-height:72vh;
+    }
 
-/* --- PANELE BOCZNE: wyrównane szerokości --- */
-.ctrl,
-.hand{
-  width: 280px;                         /* ta sama szerokość po obu stronach */
-  border: 1px solid #0f0f0f;
-  border-radius: 1px;
-  padding: 14px;
-  background: #f1f1f1;
-}
+    /* wyrównania boczne, żeby było symetrycznie */
+    .ctrl{justify-self:end;width:280px;border:1px solid #000;border-radius:8px;padding:14px;background:#fff;position:sticky;top:56px}
+    .hand{justify-self:start;width:min(36vw,620px);border:1px solid #000;border-radius:8px;padding:14px;background:#fff}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:6px}
+    input{border:1px solid #000;border-radius:6px;padding:8px 10px}
+    button{border:1px solid #000;border-radius:6px;padding:10px 14px;font-weight:700;background:#000;color:#fff;cursor:pointer}
+    button.ghost{background:#fff;color:#000}
+    .badge{display:inline-block;border:1px solid #000;border-radius:999px;padding:4px 10px}
 
-.ctrl{ justify-self: end; position: sticky; top: 56px; }
-.hand{ justify-self: start; }
-
-/* --- KARTA: zostaje jak była (środek kolumny 2) --- */
-.prompt-wrap{
-  grid-column: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 62vh;
-}
-
-.prompt{
-  width: min(26vw, 420px);
-  aspect-ratio: 2.5/3.5;
-  background: #0f0f0f; color: #f1f1f1;
-  border: 1px solid #0f0f0f; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; text-align: center;
-  padding: 18px; font-size: 20px; overflow: hidden;
-  transition: transform .22s ease, opacity .22s ease;
-}
-
+    /* ===== Czarna karta — mniejsza i dokładnie wycentrowana ===== */
+    .prompt-wrap{
+      grid-column:2; /* środkowa kolumna siatki */
+      display:flex;align-items:center;justify-content:center;
+      min-height:62vh;
+    }
+    .prompt{
+      width:min(26vw,420px); /* MNIEJSZA */
+      aspect-ratio:2.5/3.5;
+      background:#000;color:#fff;border:1px solid #000;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;text-align:center;
+      padding:18px;font-size:20px;overflow:hidden;
+      transition:transform .22s ease,opacity .22s ease;
+    }
+    .prompt img{display:block;width:100%;height:100%;object-fit:cover}
+    .prompt .fallback{padding:18px}
 
     /* ===== Ręka ===== */
     .hand-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
     @media (max-width:1200px){ .hand-grid{grid-template-columns:repeat(3,1fr)} }
     .card-btn{
-      border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1;cursor:pointer;padding:0;
+      border:1px solid #000;border-radius:8px;background:#fff;cursor:pointer;padding:0;
       width:100%;aspect-ratio:2.5/3.5;display:flex;align-items:center;justify-content:center;overflow:hidden;
       transition:transform .15s ease
     }
@@ -91,15 +87,15 @@
     .preview{position:fixed;inset:0;pointer-events:none;z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.98);transition:opacity .18s ease,transform .18s ease}
     .preview.visible{opacity:1;transform:scale(1)}
     .preview-card{
-      width:min(50vw,640px);aspect-ratio:2.5/3.5;border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1;
+      width:min(50vw,640px);aspect-ratio:2.5/3.5;border:1px solid #000;border-radius:8px;background:#fff;
       box-shadow:0 10px 30px rgba(0,0,0,.20);overflow:hidden;display:flex;align-items:center;justify-content:center
     }
     .preview-card img{width:100%;height:100%;object-fit:cover;display:block}
-    .preview-card .fallback{padding:16px;font-size:18px;text-align:center;color:#0f0f0f}
+    .preview-card .fallback{padding:16px;font-size:18px;text-align:center;color:#000}
 
     body.previewing .prompt{transform:translateX(-6vw) scale(.9)}
-    .card{border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1}
-    .warn{border:1px solid #0f0f0f;border-radius:1px;padding:8px;background:#fff1f1;color:#0f0f0f}
+    .card{border:1px solid #000;border-radius:8px;padding:14px;background:#fff}
+    .warn{border:1px solid #000;border-radius:6px;padding:8px;background:#fff1f1;color:#000}
   </style>
 </head>
 <body>
@@ -109,7 +105,7 @@
     <div class="small" id="alert" class="warn hidden"></div>
   </header>
 
-  <!-- Start -->
+  <!-- Start (bez zmian) -->
   <section id="screen-home" class="card">
     <div class="row">
       <button id="go-create">Stwórz lobby</button>
@@ -117,7 +113,7 @@
     </div>
   </section>
 
-  <!-- Tworzenie -->
+  <!-- Tworzenie (bez zmian) -->
   <section id="screen-create" class="card hidden">
     <div class="col" style="max-width:480px">
       <label class="small">Twój nick</label>
@@ -129,7 +125,7 @@
     </div>
   </section>
 
-  <!-- Dołączanie -->
+  <!-- Dołączanie (bez zmian) -->
   <section id="screen-join" class="card hidden">
     <div class="col" style="max-width:480px">
       <label class="small">Kod pokoju</label>
@@ -145,9 +141,11 @@
 
   <!-- Rozgrywka -->
   <section id="screen-room" class="hidden">
+    <!-- Pasek graczy -->
     <div id="players" class="players-bar"></div>
 
     <div class="board">
+      <!-- Lewy panel -->
       <aside class="ctrl">
         <div class="col">
           <div class="small">Pokój</div>
@@ -167,10 +165,12 @@
         </div>
       </aside>
 
+      <!-- Środek: czarna karta (mniejsza, centralna) -->
       <main class="prompt-wrap">
         <div id="prompt" class="prompt"><div class="fallback">—</div></div>
       </main>
 
+      <!-- Prawa: ręka -->
       <aside class="hand">
         <div class="small" style="margin-bottom:8px">Twoja ręka</div>
         <div id="hand" class="hand-grid"></div>
@@ -181,6 +181,7 @@
   </section>
 </div>
 
+<!-- Podgląd dużej karty -->
 <div id="preview" class="preview hidden" aria-hidden="true">
   <div id="previewCard" class="preview-card"></div>
 </div>
@@ -416,7 +417,7 @@
 
   function copyCode(){ if(!room?.code) return; navigator.clipboard.writeText(room.code).catch(()=>{}); }
 
-  /* Render */
+  /* ===== Render ===== */
   function renderRoom(){
     if(!room) return;
     roundEl.textContent = room.round||0;
@@ -477,7 +478,7 @@
 
   Object.defineProperty(window,'firebaseAuthUid',{get(){return (auth&&auth.currentUser)?auth.currentUser.uid:null;}});
 
-  // Dev-podgląd:
+  // Dev-podgląd układu:
   // show('room');
   // (function(){const names=['gracz','gracz2','gracz3','gracz5','gracz6','gracz7','gracz8'];
   //   playersEl.innerHTML = names.map((n,i)=>`<div class="player ${i===5?'active':''}"><div class="player-name">${n}</div><div class="player-slot"></div></div>`).join('');
@@ -485,4 +486,3 @@
 </script>
 </body>
 </html>
-
