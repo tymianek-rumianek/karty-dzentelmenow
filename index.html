@@ -130,18 +130,24 @@ button.ghost:hover {
     body.previewing .prompt{transform:translateX(-6vw) scale(.9)}
     .card{border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1}
     .warn{border:1px solid #0f0f0f;border-radius:1px;padding:8px;background:#fff1f1;color:#0f0f0f}
-    /* Wyśrodkuj zawartość pasków formularzy */
-#screen-home .row,
+/* Wyśrodkuj zawartość sekcji tworzenia i dołączania */
 #screen-create .col,
 #screen-join .col {
-  margin-left: auto;
-  margin-right: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;    /* wyśrodkowanie wszystkiego w poziomie */
+  justify-content: center;
+  gap: 10px;              /* odstęp pionowy między elementami */
+  margin: 0 auto;
+  max-width: 600px;
 }
-    /* (opcjonalnie) zwężenie szerokości, żeby wyglądało schludniej */
-#screen-create .col,
-#screen-join .col {
-  max-width: 600px; /* możesz zmienić */
+
+/* Odstęp między polem nicka a przyciskami */
+#screen-create .row,
+#screen-join .row {
+  margin-top: 10px;
 }
+
   </style>
 </head>
 <body>
@@ -527,6 +533,7 @@ button.ghost:hover {
 </script>
 </body>
 </html>
+
 
 
 
