@@ -21,7 +21,14 @@
     /* ZMIANA: domyślna czcionka na Life Savers */
     html,body{margin:0;background:#f1f1f1;color:#0f0f0f;font-family:'Life Savers', cursive}
     .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-    header{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #0f0f0f}
+    header {
+  display: flex;
+  justify-content: center; /* środkowanie poziome */
+  align-items: center;      /* środkowanie pionowe */
+  padding-bottom: 8px;
+  border-bottom: 1px solid #0f0f0f;
+  position: relative;
+}
     .title{font-weight:700;font-size:18px}
     .hidden{display:none}
     .small{font-weight:700;font-size:16px}
@@ -574,6 +581,7 @@ $('#btn-ready').classList.toggle('hidden', isHost);
 </script>
 </body>
 </html>
+
 
 
 
