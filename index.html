@@ -18,116 +18,79 @@
 
   <style>
     *{box-sizing:border-box}
-    /* ZMIANA: domyślna czcionka na Life Savers */
     html,body{margin:0;background:#f1f1f1;color:#0f0f0f;font-family:'Life Savers', cursive}
     .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-header {
-  display: flex;
-  justify-content: center; /* środkowanie poziome */
-  align-items: center;      /* środkowanie pionowe */
-  padding-bottom: 8px;
-  margin-bottom: 50px;
-  border: none;
-background-image: url("assets/Ornament1.png");
-background-repeat: no-repeat;
-background-position: center 10px;
-background-size: 100% 100px;   /* albo: cover / 200px auto — zależnie od szerokości */
-padding-bottom: 90px;       /* odstęp między tekstem a grafiką */
-
-  position: relative;
-}
-    .title{font-weight:900;font-size:32px;letter-spacing: 0.5px;margin-top: 20px;}
+    header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding-bottom: 8px;
+      margin-bottom: 50px;
+      border: none;
+      background-image: url("assets/Ornament1.png");
+      background-repeat: no-repeat;
+      background-position: center 10px;
+      background-size: 100% 100px;
+      padding-bottom: 90px;
+      position: relative;
+    }
+    .title{font-weight:900;font-size:32px;letter-spacing:0.5px;margin-top:20px;}
     .hidden{display:none}
     .small{font-weight:700;font-size:16px}
 
-    /* ===== Pasek graczy: nick NAD prostokątem ===== */
+    /* Pasek graczy */
     .players-bar{
       position:sticky;top:8px;z-index:10;
-      display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;padding:10px 0 22px;
-      margin-bottom: 30px;
-    }
-
+      display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;padding:10px 0 22px;
+      margin-bottom:30px;
+    }
     .player{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:100px}
     .player-name{font-size:16px;font-weight:700;line-height:1}
     .player-slot{width:100px;height:22px;border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1}
     .player.active .player-slot{background:#0f0f0f}
 
-    .row {
-  display: flex;
-  justify-content: center;  /* wyśrodkowanie poziome */
-  align-items: center;      /* wyśrodkowanie pionowe */
-  gap: 8px;                 /* odstęp między przyciskami */
-  flex-wrap: wrap;
-}
+    .row{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
 
-    /* --- BOARD: dopnij centrowanie i uporządkuj gapy --- */
-.board{
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;  /* środkowa kolumna na kartę */
-  column-gap: clamp(16px, 4vw, 40px);   /* responsywny odstęp poziomy */
-  row-gap: 24px;
-  justify-items: center;                /* zawartość kolumn wyrównana do środka */
-  align-items: start;
-  min-height: 72vh;
-}
+    /* Board */
+    .board{
+      display:grid;
+      grid-template-columns:1fr auto 1fr;
+      column-gap:clamp(16px,4vw,40px);
+      row-gap:24px;
+      justify-items:center;
+      align-items:start;
+      min-height:72vh;
+    }
+    .ctrl,.hand{
+      width:280px;border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1;
+    }
+    button{
+      appearance:none;-webkit-appearance:none;
+      border:1px solid #0f0f0f;border-radius:2px;background:#0f0f0f;color:#f1f1f1;
+      font-weight:600;font-size:16px;padding:8px 14px;cursor:pointer;transition:background .15s ease,color .15s ease;
+      font-family:'Life Savers';
+    }
+    button:hover{background:#222}
+    button.ghost{background:#f1f1f1;color:#0f0f0f}
+    button.ghost:hover{background:#e8e8e8}
 
-/* --- PANELE BOCZNE: wyrównane szerokości --- */
-.ctrl,
-.hand{
-  width: 280px;                         /* ta sama szerokość po obu stronach */
-  border: 1px solid #0f0f0f;
-  border-radius: 1px;
-  padding: 14px;
-  background: #f1f1f1;
-}
-button {
-  appearance: none;
-  -webkit-appearance: none;
-  border: 1px solid #0f0f0f;
-  border-radius: 2px;
-  background: #0f0f0f;
-  color: #f1f1f1;
-  font-weight: 600;
-  font-size: 16px;
-  padding: 8px 14px;
-  cursor: pointer;
-  transition: background .15s ease, color .15s ease;
-  font-family: 'Life Savers';
-}
-button:hover {
-  background: #222;
-}
-button.ghost {
-  background: #f1f1f1;
-  color: #0f0f0f;
-}
-button.ghost:hover {
-  background: #e8e8e8;
-}
+    .ctrl{justify-self:end;position:sticky;top:56px;}
+    .hand{justify-self:start;}
 
-.ctrl{ justify-self: end; position: sticky; top: 56px; }
-.hand{ justify-self: start; }
+    .prompt-wrap{grid-column:2;display:flex;align-items:center;justify-content:center;min-height:62vh;}
+    .prompt{
+      width:min(26vw,420px);
+      aspect-ratio:2.5/3.5;
+      background:#0f0f0f;color:#f1f1f1;
+      border:1px solid #0f0f0f;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;text-align:center;
+      padding:18px;font-size:20px;overflow:hidden;
+      transition:transform .22s ease,opacity .22s ease;
+    }
+    /* obraz czarnej karty */
+    .prompt img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* --- KARTA: zostaje jak była (środek kolumny 2) --- */
-.prompt-wrap{
-  grid-column: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 62vh;
-}
-
-.prompt{
-  width: min(26vw, 420px);
-  aspect-ratio: 2.5/3.5;
-  background: #0f0f0f; color: #f1f1f1;
-  border: 1px solid #0f0f0f; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; text-align: center;
-  padding: 18px; font-size: 20px; overflow: hidden;
-  transition: transform .22s ease, opacity .22s ease;
-}
-
-    /* ===== Ręka ===== */
+    /* Ręka */
     .hand-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
     @media (max-width:1200px){ .hand-grid{grid-template-columns:repeat(3,1fr)} }
     .card-btn{
@@ -152,26 +115,13 @@ button.ghost:hover {
     body.previewing .prompt{transform:translateX(-6vw) scale(.9)}
     .card{border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1}
     .warn{border:1px solid #0f0f0f;border-radius:1px;padding:8px;background:#fff1f1;color:#0f0f0f}
-/* Wyśrodkuj zawartość sekcji tworzenia i dołączania */
-#screen-create .col,
-#screen-join .col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;    /* wyśrodkowanie wszystkiego w poziomie */
-  justify-content: center;
-  gap: 10px;              /* odstęp pionowy między elementami */
-  margin: 0 auto;
-  max-width: 600px;
-}
 
-/* Odstęp między polem nicka a przyciskami */
-#screen-create .row,
-#screen-join .row {
-  margin-top: 10px;
-  #screen-home { margin-top: -20px; }
-
-}
-
+    /* Ekrany startowe */
+    #screen-create .col,#screen-join .col{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:0 auto;max-width:600px;
+    }
+    #screen-create .row,#screen-join .row{margin-top:10px;}
+    #screen-home{margin-top:-20px;}
   </style>
 </head>
 <body>
@@ -309,6 +259,30 @@ button.ghost:hover {
     warn('Firebase nie działa: ' + (e?.code || e?.message || e));
   }
 
+  // ====== CZARNE KARTY (obrazki) – manifest lub numeracja ======
+  // Jeśli dodasz assets/karty/czarne/manifest.json -> zostanie użyty.
+  // Jeśli nie, wczyta 001.png..NNN.png wg BLACK_CARD_FALLBACK_COUNT.
+  const BLACK_CARD_FALLBACK_COUNT = 96; // ustaw, jeśli nie używasz manifestu
+  let BLACK_DECK = [];
+
+  async function loadBlackDeck(){
+    try{
+      const res = await fetch('assets/karty/czarne/manifest.json', {cache:'no-store'});
+      if(res.ok){
+        const arr = await res.json();
+        BLACK_DECK = arr.map(name => `assets/karty/czarne/${name}`);
+      }else{
+        BLACK_DECK = Array.from({length: BLACK_CARD_FALLBACK_COUNT},
+          (_,i)=>`assets/karty/czarne/${String(i+1).padStart(3,'0')}.png`);
+      }
+    }catch(_){
+      BLACK_DECK = Array.from({length: BLACK_CARD_FALLBACK_COUNT},
+        (_,i)=>`assets/karty/czarne/${String(i+1).padStart(3,'0')}.png`);
+    }
+  }
+  await loadBlackDeck();
+
+  // ====== Twoje dotychczasowe taliie tekstowe (na razie zostają) ======
   const DEFAULT_QUESTIONS = [
     "_________ to najlepszy sposób na rozpoczęcie dnia.",
     "W piekle czeka na mnie kara za _________.",
@@ -344,6 +318,10 @@ button.ghost:hover {
         deckQ: shuffle([...DEFAULT_QUESTIONS]),
         deckA: shuffle([...DEFAULT_ANSWERS]),
         discardQ:[], discardA:[],
+        // >>> talia czarnych jako obrazki:
+        deckBlack: shuffle([...BLACK_DECK]),
+        discardBlack: [],
+        currentBlack: null,
         hostId: uid
       });
       await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), is:true });
@@ -421,6 +399,21 @@ button.ghost:hover {
 
       const czarIdx = room.czarIdx||0; const czar = players[czarIdx % players.length];
 
+      // --- CZARNE KARTY (obrazki) ---
+      let deckBlack   = [...(room.deckBlack||[])];
+      let discardBlack= [...(room.discardBlack||[])];
+
+      // poprzednią czarną (jeśli była) odkładamy na discard
+      if(room.currentBlack) discardBlack.push(room.currentBlack);
+
+      if(!deckBlack.length){
+        deckBlack = shuffle(discardBlack);
+        discardBlack = [];
+      }
+      if(!deckBlack.length) return warn('Brak czarnych kart.');
+      const blackUrl = deckBlack.shift(); // wylosowana czarna karta (obrazek)
+
+      // --- PYTANIA/ODPOWIEDZI tekstowe (tymczasowo zostają) ---
       let deckQ = [...(room.deckQ||[])]; let discardQ = [...(room.discardQ||[])];
       if(!deckQ.length){ deckQ = shuffle(discardQ); discardQ = []; }
       if(!deckQ.length) return warn('Brak kart pytań.');
@@ -440,47 +433,45 @@ button.ghost:hover {
         batch.set(hRef,{cards});
       }
 
+      // wyczyść zagrania
       const subsSnap = await getDocs(collection(db,'rooms',code,'submissions'));
       subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)));
 
+      // aktualizacja pokoju
       batch.update(doc(db,'rooms',code),{
         stage:'playing', round:(room.round||0)+1,
         czarId: czar.id, czarIdx: (czarIdx+1)%players.length,
-        prompt, deckQ, discardQ, deckA, discardA, winner:null
+        prompt, deckQ, discardQ, deckA, discardA, winner:null,
+        currentBlack: blackUrl,
+        deckBlack, discardBlack
       });
 
       await batch.commit();
     }catch(e){ warn('Błąd startu rundy: '+(e?.message||e)); }
   }
-  
-// --- Nowa logika: "Następna runda" ---
-async function readyForNextRound() {
-  if (!room) return;
-  const code = room.code;
-  const uid = auth.currentUser?.uid;
 
-  // Zaznacz gotowość gracza
-  await setDoc(doc(db, "rooms", code, "ready", uid), {
-    uid,
-    ready: true,
-    at: serverTimestamp()
-  });
+  // --- "Następna runda" (wszyscy muszą kliknąć) ---
+  async function readyForNextRound() {
+    if (!room) return;
+    const code = room.code;
+    const uid = auth.currentUser?.uid;
 
-  // Sprawdź, czy wszyscy gracze są gotowi
-  const readySnap = await getDocs(collection(db, "rooms", code, "ready"));
-  const readyCount = readySnap.size;
-  const totalPlayers = room.players?.length || 0;
+    await setDoc(doc(db, "rooms", code, "ready", uid), {
+      uid, ready: true, at: serverTimestamp()
+    });
 
-  if (readyCount >= totalPlayers) {
-    // Wszyscy gotowi — usuń stare wpisy i rozpocznij kolejną rundę
-    const batch = writeBatch(db);
-    readySnap.forEach(d => batch.delete(doc(db, "rooms", code, "ready", d.id)));
-    await batch.commit();
-    startRound();
+    const readySnap = await getDocs(collection(db, "rooms", code, "ready"));
+    const readyCount = readySnap.size;
+    const totalPlayers = room.players?.length || 0;
+
+    if (readyCount >= totalPlayers) {
+      const batch = writeBatch(db);
+      readySnap.forEach(d => batch.delete(doc(db, "rooms", code, "ready", d.id)));
+      await batch.commit();
+      startRound();
+    }
   }
-}
 
-  
   async function playCard(index){
     try{
       if(!room || room.stage!=='playing') return;
@@ -522,14 +513,20 @@ async function readyForNextRound() {
   function renderRoom(){
     if(!room) return;
     roundEl.textContent = room.round||0;
-    promptEl.innerHTML = `<div class="fallback">${esc(room.prompt || '—')}</div>`;
+
+    // pokaż aktualną czarną kartę (obrazek) albo placeholder
+    if(room.currentBlack){
+      promptEl.innerHTML = `<img src="${room.currentBlack}" alt="Czarna karta">`;
+    }else{
+      promptEl.innerHTML = `<div class="fallback">—</div>`;
+    }
+
     const czar = (room.players||[]).find(p=>p.id===room.czarId);
     czarNameEl.textContent = czar? czar.name : '—';
-    // Pokazuj odpowiednie przyciski (host ma Start, reszta "Następna runda")
-const isHost = (auth.currentUser?.uid === room.hostId);
-$('#btn-start').classList.toggle('hidden', !isHost);
-$('#btn-ready').classList.toggle('hidden', isHost);
 
+    const isHost = (auth.currentUser?.uid === room.hostId);
+    $('#btn-start').classList.toggle('hidden', !isHost);
+    $('#btn-ready').classList.toggle('hidden', isHost);
   }
 
   function renderPlayers(){
@@ -586,57 +583,6 @@ $('#btn-ready').classList.toggle('hidden', isHost);
 
   // Dev-podgląd:
   // show('room');
-  // (function(){const names=['gracz','gracz2','gracz3','gracz5','gracz6','gracz7','gracz8'];
-  //   playersEl.innerHTML = names.map((n,i)=>`<div class="player ${i===5?'active':''}"><div class="player-name">${n}</div><div class="player-slot"></div></div>`).join('');
-  // })();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
