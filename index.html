@@ -20,7 +20,7 @@
     *{box-sizing:border-box}
     /* ZMIANA: domyślna czcionka na Life Savers */
     html,body{margin:0;background:#f1f1f1;color:#0f0f0f;font-family:'Life Savers', cursive}
-    .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px;padding-top: 0;}
+    .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
 header {
   display: flex;
   justify-content: center; /* środkowanie poziome */
@@ -167,6 +167,8 @@ button.ghost:hover {
 #screen-create .row,
 #screen-join .row {
   margin-top: 10px;
+  #screen-home { margin-top: -20px; }
+
 }
 
   </style>
@@ -589,6 +591,7 @@ $('#btn-ready').classList.toggle('hidden', isHost);
 </script>
 </body>
 </html>
+
 
 
 
