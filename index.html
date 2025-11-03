@@ -349,7 +349,7 @@
 
       const playersSnap = await getDocs(collection(db,'rooms',code,'players'));
       const players = []; playersSnap.forEach(d=>players.push({id:d.id,...d.data()}));
-      if(players.length<3) return warn('Potrzeba min. 3 graczy.');
+      if(players.length<1) return warn('Potrzeba min. 1 gracza.');
 
       const czarIdx = room.czarIdx||0; const czar = players[czarIdx % players.length];
 
@@ -458,4 +458,5 @@
 </script>
 </body>
 </html>
+
 
