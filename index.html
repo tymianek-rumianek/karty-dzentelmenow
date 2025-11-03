@@ -26,7 +26,13 @@
   justify-content: center; /* środkowanie poziome */
   align-items: center;      /* środkowanie pionowe */
   padding-bottom: 8px;
-  border-bottom: 1px solid #0f0f0f;
+  border: none;
+background-image: url("assets/Ornament1.png");
+background-repeat: no-repeat;
+background-position: center bottom;
+background-size: contain;   /* albo: cover / 200px auto — zależnie od szerokości */
+padding-bottom: 24px;       /* odstęp między tekstem a grafiką */
+
   position: relative;
 }
     .title{font-weight:900;font-size:18px;letter-spacing: 0.5px;}
@@ -581,6 +587,7 @@ $('#btn-ready').classList.toggle('hidden', isHost);
 </script>
 </body>
 </html>
+
 
 
 
