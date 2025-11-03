@@ -351,7 +351,7 @@
       // gracze
       const playersSnap = await getDocs(collection(db,'rooms',code,'players'));
       const players = []; playersSnap.forEach(d=>players.push({id:d.id,...d.data()}));
-      if(players.length < 3) return warn('Potrzeba min. 3 graczy.'); // wróciło do starej blokady (możesz usunąć)
+      if(players.length < 1) return warn('Potrzeba min. 3 graczy.'); // wróciło do starej blokady (możesz usunąć)
 
       // sędzia wg prostego indeksu
       const czarIdx = room.czarIdx||0; 
@@ -465,3 +465,4 @@
 </script>
 </body>
 </html>
+
