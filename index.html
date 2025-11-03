@@ -21,30 +21,30 @@
     /* ZMIANA: domyślna czcionka na Life Savers */
     html,body{margin:0;background:#f1f1f1;color:#0f0f0f;font-family:'Life Savers', cursive}
     .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-header{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-
-  /* wysokość ornamentu ustawiamy raz i używamy niżej */
-  --ornament-h: 60px;
-
-  /* ważne: tło przyklej do dołu i niech ma zadaną wysokość */
-  background-image: url("assets/Ornament1.png");
-  background-repeat: no-repeat;
-  background-position: center bottom;    /* zamiast center 30% */
-  background-size: auto var(--ornament-h);
-
-  /* musi być co najmniej tyle paddingu na dół, ile ma ornament */
-  padding-top: 8px;
-  padding-bottom: calc(var(--ornament-h) + 8px);
-
-  /* ten margin może zostać, nie wpływa na tło */
+header {
+  display: flex;
+  justify-content: center; /* środkowanie poziome */
+  align-items: center;      /* środkowanie pionowe */
+  padding-bottom: 8px;
   margin-bottom: 50px;
+  border: none;
+background-image: url("assets/Ornament1.png");
+background-repeat: no-repeat;
+background-position: center 30%;
+background-size: 60% 60px;   /* albo: cover / 200px auto — zależnie od szerokości */
+padding-bottom: 24px;       /* odstęp między tekstem a grafiką */
 
-  border:none;
-  position:relative;
+  position: relative;
 }
+    .title{font-weight:900;font-size:18px;letter-spacing: 0.5px;}
+    .hidden{display:none}
+    .small{font-weight:700;font-size:16px}
+
+    /* ===== Pasek graczy: nick NAD prostokątem ===== */
+    .players-bar{
+      position:sticky;top:8px;z-index:10;
+      display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;padding:10px 0 22px;
+    }
 
     .player{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:100px}
     .player-name{font-size:16px;font-weight:700;line-height:1}
@@ -589,6 +589,7 @@ $('#btn-ready').classList.toggle('hidden', isHost);
 </script>
 </body>
 </html>
+
 
 
 
