@@ -44,11 +44,11 @@
     .board{
       display:grid;grid-template-columns:1fr auto 1fr;
       column-gap:clamp(16px,4vw,40px);row-gap:24px;
-      justify-items:center;align-items:start;min-height:72vh;
+      justify-items:center;align-items:;min-height:72vh;
     }
     .ctrl,.hand{width:280px;border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1}
     .ctrl{justify-self:end;position:sticky;top:56px;}
-    .hand{justify-self:start;}
+    .hand{justify-self:;}
 
     button{
       appearance:none;-webkit-appearance:none;
@@ -103,7 +103,7 @@
     <div class="small" id="alert" class="warn hidden"></div>
   </header>
 
-  <!-- Start -->
+  <!--  -->
   <section id="screen-home" class="card">
     <div class="row">
       <button id="go-create">Stwórz lobby</button>
@@ -152,7 +152,7 @@
           </div>
           <div class="small" style="margin-top:8px">Sterowanie</div>
           <div class="row">
-            <button id="btn-start">Start rundy</button>
+            <button id="btn-"> rundy</button>
             <button id="btn-leave" class="ghost">Wyjdź</button>
           </div>
           <div class="row" style="margin-top:8px">
@@ -264,28 +264,33 @@
 
   show('home');
 
-  async function createLobby(){
-    try{
-      const nick = $('#create-nick').value.trim() || 'Gracz';
-      const code = makeCode();
-      const uid  = auth.currentUser.uid; me = {id: uid, name: nick};
+async function createLobby(){
+  try{
+    const nick = $('#create-nick').value.trim() || 'Gracz';
+    const code = makeCode();
+    const uid  = auth.currentUser.uid; 
+    me = {id: uid, name: nick};
 
-      const roomRef = doc(db,'rooms',code);
-      await setDoc(roomRef,{
-        code, createdAt: serverTimestamp(), stage:'lobby', round:0,
-        czarId:null, czarIdx:0, winner:null,
-        // tylko czarne
-        deckBlack: shuffle([...BLACK_DECK]),
-        discardBlack: [],
-        currentBlack: null,
-        hostId: uid
-        turnOrder: [],
-      });
-      await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), is:true });
-      await setDoc(doc(db,'rooms',code,'hands',uid),{ cards:[] }); // placeholder pod przyszłe białe
-      await enterRoom(code);
-    }catch(e){ warn('Błąd tworzenia pokoju: '+(e?.message||e)); }
-  }
+    const roomRef = doc(db,'rooms',code);
+    await setDoc(roomRef,{
+      code, createdAt: serverTimestamp(), stage:'lobby', round:0,
+      czarId:null, czarIdx:0, winner:null,
+      // tylko czarne
+      deckBlack: shuffle([...BLACK_DECK]),
+      discardBlack: [],
+      currentBlack: null,
+      hostId: uid,            // <- PRZECINEK TU
+      turnOrder: []           // można bez przecinka na końcu
+    });
+
+    await setDoc(doc(db,'rooms',code,'players',uid),{
+      name:nick, score:0, joinedAt:serverTimestamp(), is:true
+    });
+    await setDoc(doc(db,'rooms',code,'hands',uid),{ cards:[] });
+
+    await enterRoom(code);
+  }catch(e){ warn('Błąd tworzenia pokoju: '+(e?.message||e)); }
+}
 
   async function joinLobby(){
     try{
@@ -342,74 +347,82 @@
     }catch(e){ warn('Błąd opuszczania pokoju: '+(e?.message||e)); }
   }
 
-async function startRound(){
-  try{
-    if(!room) return;
-    if(((auth.currentUser||{}).uid)!==room.hostId) return warn('Tylko host może rozpocząć rundę.');
+async function startRound() {
+  try {
+    if (!room) return;
+    if (((auth.currentUser || {}).uid) !== room.hostId)
+      return warn("Tylko host może rozpocząć rundę.");
     const code = room.code;
 
-    // --- gracze + kolejność ---
-    const playersSnap = await getDocs(collection(db,'rooms',code,'players'));
+    // pobieramy wszystkich graczy
+    const playersSnap = await getDocs(collection(db, "rooms", code, "players"));
     const players = [];
-    playersSnap.forEach(d=>players.push({id:d.id,...d.data()}));
+    playersSnap.forEach((d) => players.push({ id: d.id, ...d.data() }));
+    if (!players.length) return warn("Brak graczy.");
 
-    if(players.length < 1) return warn('Potrzeba min. 1 gracza.');
-
-    // Zabezpieczenie: kolejność wg turnOrder (jeśli jest), w przeciwnym razie wg czasu dołączenia
+    // --- KOLEJNOŚĆ GRACZY ---
     let order = Array.isArray(room.turnOrder) ? [...room.turnOrder] : [];
-    const byId = new Map(players.map(p=>[p.id,p]));
+    const byId = new Map(players.map((p) => [p.id, p]));
 
-    // odfiltruj nieistniejących i zachowaj kolejność
-    let orderedPlayers = order.map(id => byId.get(id)).filter(Boolean);
-
-    // jeśli ktoś doszedł (nie ma go w order) – dopnij w kolejności dołączenia
-    if(orderedPlayers.length !== players.length){
-      const missing = players
-        .filter(p => !order.includes(p.id))
-        .sort((a,b)=> (a.joinedAt?.seconds||0) - (b.joinedAt?.seconds||0));
+    // uzupełnij brakujących graczy
+    let orderedPlayers = order.map((id) => byId.get(id)).filter(Boolean);
+    const missing = players.filter((p) => !order.includes(p.id));
+    if (missing.length) {
+      missing.sort(
+        (a, b) => (a.joinedAt?.seconds || 0) - (b.joinedAt?.seconds || 0)
+      );
       orderedPlayers = orderedPlayers.concat(missing);
-      order = orderedPlayers.map(p=>p.id);
+      order = orderedPlayers.map((p) => p.id);
     }
 
-    // Ustal indeks sędziego:
-    const firstRound = !room.round || room.round === 0 || !room.czarId;
+    // --- WYBÓR SĘDZIEGO ---
     let idx;
-    if(firstRound){
-      idx = Math.floor(Math.random() * orderedPlayers.length);  // losowy pierwszy sędzia
-    }else{
-      idx = room.czarIdx || 0;  // kolejny wg cyklu
+    const firstRound = !room.round || room.round === 0 || !room.czarId;
+    if (firstRound) {
+      idx = Math.floor(Math.random() * orderedPlayers.length); // losowy pierwszy
+    } else {
+      idx = room.czarIdx || 0; // kolejny
     }
     const czar = orderedPlayers[idx];
     const nextIdx = (idx + 1) % orderedPlayers.length;
 
-    // --- CZARNA KARTA (PNG) ---
-    let deckBlack   = [...(room.deckBlack||[])];
-    let discardBlack= [...(room.discardBlack||[])];
-    if(room.currentBlack) discardBlack.push(room.currentBlack);
+    // --- CZARNA KARTA ---
+    let deckBlack = [...(room.deckBlack || [])];
+    let discardBlack = [...(room.discardBlack || [])];
+    if (room.currentBlack) discardBlack.push(room.currentBlack);
 
-    if(!deckBlack.length){ deckBlack = shuffle(discardBlack); discardBlack = []; }
-    if(!deckBlack.length) return warn('Brak czarnych kart.');
+    if (!deckBlack.length) {
+      deckBlack = shuffle(discardBlack);
+      discardBlack = [];
+    }
+    if (!deckBlack.length) return warn("Brak czarnych kart.");
     const blackUrl = deckBlack.shift();
 
-    // Wyczyść zagrania
-    const subsSnap = await getDocs(collection(db,'rooms',code,'submissions'));
+    // --- ZAPIS DO FIRESTORE ---
     const batch = writeBatch(db);
-    subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)));
 
-    // Aktualizacja pokoju: zapisujemy sędziego, kolejność i indeks następnego
-    batch.update(doc(db,'rooms',code),{
-      stage: 'playing',
-      round: (room.round||0) + 1,
+    // usuń stare zagrania
+    const subsSnap = await getDocs(collection(db, "rooms", code, "submissions"));
+    subsSnap.forEach((s) =>
+      batch.delete(doc(db, "rooms", code, "submissions", s.id))
+    );
+
+    batch.update(doc(db, "rooms", code), {
+      stage: "playing",
+      round: (room.round || 0) + 1,
       czarId: czar.id,
       czarIdx: nextIdx,
       turnOrder: order,
       winner: null,
       currentBlack: blackUrl,
-      deckBlack, discardBlack
+      deckBlack,
+      discardBlack,
     });
 
     await batch.commit();
-  }catch(e){ warn('Błąd startu rundy: '+(e?.message||e)); }
+  } catch (e) {
+    warn("Błąd startu rundy: " + (e?.message || e));
+  }
 }
 
 
@@ -458,19 +471,22 @@ async function startRound(){
     $('#btn-ready').classList.toggle('hidden', isHost);
   }
 
-function renderPlayers(){
+function renderPlayers() {
   const players = room?.players || [];
-  const order = room?.turnOrder || players.map(p=>p.id);
-  const map = new Map(players.map(p=>[p.id,p]));
-  const ordered = order.map(id=>map.get(id)).filter(Boolean);
+  const order = room?.turnOrder || players.map((p) => p.id);
+  const map = new Map(players.map((p) => [p.id, p]));
+  const ordered = order.map((id) => map.get(id)).filter(Boolean);
 
   const czarId = room?.czarId || null;
-  playersEl.innerHTML = ordered.map(p =>
-    `<div class="player ${p.id===czarId?'active':''}">
-       <div class="player-name">${esc(p.name)}</div>
-       <div class="player-slot" aria-hidden="true"></div>
-     </div>`
-  ).join('');
+  playersEl.innerHTML = ordered
+    .map(
+      (p) => `
+      <div class="player ${p.id === czarId ? "active" : ""}">
+        <div class="player-name">${esc(p.name)}</div>
+        <div class="player-slot" aria-hidden="true"></div>
+      </div>`
+    )
+    .join("");
 }
 
   function renderSubmissions(){
@@ -495,6 +511,7 @@ function renderPlayers(){
 </script>
 </body>
 </html>
+
 
 
 
