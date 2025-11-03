@@ -279,6 +279,7 @@
         discardBlack: [],
         currentBlack: null,
         hostId: uid
+        turnOrder: [],
       });
       await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), is:true });
       await setDoc(doc(db,'rooms',code,'hands',uid),{ cards:[] }); // placeholder pod przyszłe białe
@@ -341,44 +342,76 @@
     }catch(e){ warn('Błąd opuszczania pokoju: '+(e?.message||e)); }
   }
 
-  async function startRound(){
-    try{
-      if(!room) return;
-      if(((auth.currentUser||{}).uid)!==room.hostId) return warn('Tylko host może rozpocząć rundę.');
-      const code = room.code;
+async function startRound(){
+  try{
+    if(!room) return;
+    if(((auth.currentUser||{}).uid)!==room.hostId) return warn('Tylko host może rozpocząć rundę.');
+    const code = room.code;
 
-      const playersSnap = await getDocs(collection(db,'rooms',code,'players'));
-      const players = []; playersSnap.forEach(d=>players.push({id:d.id,...d.data()}));
-      if(players.length<1) return warn('Potrzeba min. 1 gracza.');
+    // --- gracze + kolejność ---
+    const playersSnap = await getDocs(collection(db,'rooms',code,'players'));
+    const players = [];
+    playersSnap.forEach(d=>players.push({id:d.id,...d.data()}));
 
-      const czarIdx = room.czarIdx||0; const czar = players[czarIdx % players.length];
+    if(players.length < 1) return warn('Potrzeba min. 1 gracza.');
 
-      // CZARNA KARTA (PNG)
-      let deckBlack   = [...(room.deckBlack||[])];
-      let discardBlack= [...(room.discardBlack||[])];
-      if(room.currentBlack) discardBlack.push(room.currentBlack);
+    // Zabezpieczenie: kolejność wg turnOrder (jeśli jest), w przeciwnym razie wg czasu dołączenia
+    let order = Array.isArray(room.turnOrder) ? [...room.turnOrder] : [];
+    const byId = new Map(players.map(p=>[p.id,p]));
 
-      if(!deckBlack.length){ deckBlack = shuffle(discardBlack); discardBlack = []; }
-      if(!deckBlack.length) return warn('Brak czarnych kart.');
-      const blackUrl = deckBlack.shift();
+    // odfiltruj nieistniejących i zachowaj kolejność
+    let orderedPlayers = order.map(id => byId.get(id)).filter(Boolean);
 
-      // wyczyść zagrania
-      const subsSnap = await getDocs(collection(db,'rooms',code,'submissions'));
-      const batch = writeBatch(db);
-      subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)));
+    // jeśli ktoś doszedł (nie ma go w order) – dopnij w kolejności dołączenia
+    if(orderedPlayers.length !== players.length){
+      const missing = players
+        .filter(p => !order.includes(p.id))
+        .sort((a,b)=> (a.joinedAt?.seconds||0) - (b.joinedAt?.seconds||0));
+      orderedPlayers = orderedPlayers.concat(missing);
+      order = orderedPlayers.map(p=>p.id);
+    }
 
-      // aktualizacja pokoju
-      batch.update(doc(db,'rooms',code),{
-        stage:'playing', round:(room.round||0)+1,
-        czarId: czar.id, czarIdx: (czarIdx+1)%players.length,
-        winner:null,
-        currentBlack: blackUrl,
-        deckBlack, discardBlack
-      });
+    // Ustal indeks sędziego:
+    const firstRound = !room.round || room.round === 0 || !room.czarId;
+    let idx;
+    if(firstRound){
+      idx = Math.floor(Math.random() * orderedPlayers.length);  // losowy pierwszy sędzia
+    }else{
+      idx = room.czarIdx || 0;  // kolejny wg cyklu
+    }
+    const czar = orderedPlayers[idx];
+    const nextIdx = (idx + 1) % orderedPlayers.length;
 
-      await batch.commit();
-    }catch(e){ warn('Błąd startu rundy: '+(e?.message||e)); }
-  }
+    // --- CZARNA KARTA (PNG) ---
+    let deckBlack   = [...(room.deckBlack||[])];
+    let discardBlack= [...(room.discardBlack||[])];
+    if(room.currentBlack) discardBlack.push(room.currentBlack);
+
+    if(!deckBlack.length){ deckBlack = shuffle(discardBlack); discardBlack = []; }
+    if(!deckBlack.length) return warn('Brak czarnych kart.');
+    const blackUrl = deckBlack.shift();
+
+    // Wyczyść zagrania
+    const subsSnap = await getDocs(collection(db,'rooms',code,'submissions'));
+    const batch = writeBatch(db);
+    subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)));
+
+    // Aktualizacja pokoju: zapisujemy sędziego, kolejność i indeks następnego
+    batch.update(doc(db,'rooms',code),{
+      stage: 'playing',
+      round: (room.round||0) + 1,
+      czarId: czar.id,
+      czarIdx: nextIdx,
+      turnOrder: order,
+      winner: null,
+      currentBlack: blackUrl,
+      deckBlack, discardBlack
+    });
+
+    await batch.commit();
+  }catch(e){ warn('Błąd startu rundy: '+(e?.message||e)); }
+}
+
 
   async function readyForNextRound() {
     if (!room) return;
@@ -425,16 +458,20 @@
     $('#btn-ready').classList.toggle('hidden', isHost);
   }
 
-  function renderPlayers(){
-    const players = room?.players || [];
-    const czarId = room?.czarId || null;
-    playersEl.innerHTML = players.map(p =>
-      `<div class="player ${p.id===czarId?'active':''}">
-         <div class="player-name">${esc(p.name)}</div>
-         <div class="player-slot" aria-hidden="true"></div>
-       </div>`
-    ).join('');
-  }
+function renderPlayers(){
+  const players = room?.players || [];
+  const order = room?.turnOrder || players.map(p=>p.id);
+  const map = new Map(players.map(p=>[p.id,p]));
+  const ordered = order.map(id=>map.get(id)).filter(Boolean);
+
+  const czarId = room?.czarId || null;
+  playersEl.innerHTML = ordered.map(p =>
+    `<div class="player ${p.id===czarId?'active':''}">
+       <div class="player-name">${esc(p.name)}</div>
+       <div class="player-slot" aria-hidden="true"></div>
+     </div>`
+  ).join('');
+}
 
   function renderSubmissions(){
     const subs = room?.submissions || [];
@@ -458,6 +495,7 @@
 </script>
 </body>
 </html>
+
 
 
 
