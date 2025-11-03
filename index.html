@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- CSP: dodane fonts.googleapis.com do style-src i fonts.gstatic.com do font-src -->
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self';
                  script-src 'self' https://www.gstatic.com https://www.gstatic.com/firebasejs/ 'unsafe-inline';
@@ -12,37 +11,28 @@
                  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
                  font-src 'self' data: https://fonts.gstatic.com;" />
   <title>Karty Dżentelmenów</title>
-
-  <!-- Google Font: Life Savers (400,700) -->
   <link href="https://fonts.googleapis.com/css2?family=Life+Savers:wght@400;700&display=swap" rel="stylesheet">
 
   <style>
     *{box-sizing:border-box}
-    html,body{margin:0;background:#f1f1f1;color:#0f0f0f;font-family:'Life Savers', cursive}
+    html,body{margin:0;background:#f1f1f1;color:#0f0f0f;font-family:'Life Savers',cursive}
     .wrap{max-width:1400px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-    header {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding-bottom: 8px;
-      margin-bottom: 50px;
-      border: none;
-      background-image: url("assets/Ornament1.png");
-      background-repeat: no-repeat;
-      background-position: center 10px;
-      background-size: 100% 100px;
-      padding-bottom: 90px;
-      position: relative;
+
+    header{
+      display:flex;justify-content:center;align-items:center;
+      margin-bottom:50px;
+      background-image:url("assets/Ornament1.png");
+      background-repeat:no-repeat;background-position:center 10px;background-size:100% 100px;
+      padding-bottom:90px;position:relative;border:none;
     }
-    .title{font-weight:900;font-size:32px;letter-spacing:0.5px;margin-top:20px;}
+    .title{font-weight:900;font-size:32px;letter-spacing:.5px;margin-top:20px;}
     .hidden{display:none}
     .small{font-weight:700;font-size:16px}
 
-    /* Pasek graczy */
     .players-bar{
       position:sticky;top:8px;z-index:10;
-      display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;padding:10px 0 22px;
-      margin-bottom:30px;
+      display:flex;gap:18px;align-items:flex-end;justify-content:center;flex-wrap:wrap;
+      padding:10px 0 22px;margin-bottom:30px;
     }
     .player{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:100px}
     .player-name{font-size:16px;font-weight:700;line-height:1}
@@ -51,19 +41,15 @@
 
     .row{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
 
-    /* Board */
     .board{
-      display:grid;
-      grid-template-columns:1fr auto 1fr;
-      column-gap:clamp(16px,4vw,40px);
-      row-gap:24px;
-      justify-items:center;
-      align-items:start;
-      min-height:72vh;
+      display:grid;grid-template-columns:1fr auto 1fr;
+      column-gap:clamp(16px,4vw,40px);row-gap:24px;
+      justify-items:center;align-items:start;min-height:72vh;
     }
-    .ctrl,.hand{
-      width:280px;border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1;
-    }
+    .ctrl,.hand{width:280px;border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1}
+    .ctrl{justify-self:end;position:sticky;top:56px;}
+    .hand{justify-self:start;}
+
     button{
       appearance:none;-webkit-appearance:none;
       border:1px solid #0f0f0f;border-radius:2px;background:#0f0f0f;color:#f1f1f1;
@@ -74,41 +60,30 @@
     button.ghost{background:#f1f1f1;color:#0f0f0f}
     button.ghost:hover{background:#e8e8e8}
 
-    .ctrl{justify-self:end;position:sticky;top:56px;}
-    .hand{justify-self:start;}
-
+    /* Środek — bez czarnego prostokąta */
     .prompt-wrap{grid-column:2;display:flex;align-items:center;justify-content:center;min-height:62vh;}
     .prompt{
       width:min(26vw,420px);
       aspect-ratio:2.5/3.5;
-      background:#0f0f0f;color:#f1f1f1;
-      border:1px solid #0f0f0f;border-radius:8px;
+      /* usunięte tło/obramowanie */
+      background:transparent;border:none;border-radius:0;
       display:flex;align-items:center;justify-content:center;text-align:center;
-      padding:18px;font-size:20px;overflow:hidden;
-      transition:transform .22s ease,opacity .22s ease;
+      padding:0;overflow:visible;transition:transform .22s ease,opacity .22s ease;
     }
-    /* obraz czarnej karty */
     .prompt img{width:100%;height:100%;object-fit:cover;display:block}
 
-    /* Ręka */
     .hand-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
     @media (max-width:1200px){ .hand-grid{grid-template-columns:repeat(3,1fr)} }
-    .card-btn{
-      border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1;cursor:pointer;padding:0;
-      width:100%;aspect-ratio:2.5/3.5;display:flex;align-items:center;justify-content:center;overflow:hidden;
-      transition:transform .15s ease
-    }
+    .card-btn{border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1;cursor:pointer;padding:0;
+      width:100%;aspect-ratio:2.5/3.5;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:transform .15s ease}
     .card-btn:hover{transform:translateY(-2px)}
     .card-btn img{width:100%;height:100%;object-fit:cover;display:block}
     .card-btn .fallback{padding:10px;font-size:16px;text-align:center}
 
-    /* Podgląd */
     .preview{position:fixed;inset:0;pointer-events:none;z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.98);transition:opacity .18s ease,transform .18s ease}
     .preview.visible{opacity:1;transform:scale(1)}
-    .preview-card{
-      width:min(50vw,640px);aspect-ratio:2.5/3.5;border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1;
-      box-shadow:0 10px 30px rgba(0,0,0,.20);overflow:hidden;display:flex;align-items:center;justify-content:center
-    }
+    .preview-card{width:min(50vw,640px);aspect-ratio:2.5/3.5;border:1px solid #0f0f0f;border-radius:1px;background:#f1f1f1;
+      box-shadow:0 10px 30px rgba(0,0,0,.2);overflow:hidden;display:flex;align-items:center;justify-content:center}
     .preview-card img{width:100%;height:100%;object-fit:cover;display:block}
     .preview-card .fallback{padding:16px;font-size:18px;text-align:center;color:#0f0f0f}
 
@@ -116,10 +91,7 @@
     .card{border:1px solid #0f0f0f;border-radius:1px;padding:14px;background:#f1f1f1}
     .warn{border:1px solid #0f0f0f;border-radius:1px;padding:8px;background:#fff1f1;color:#0f0f0f}
 
-    /* Ekrany startowe */
-    #screen-create .col,#screen-join .col{
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:0 auto;max-width:600px;
-    }
+    #screen-create .col,#screen-join .col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:0 auto;max-width:600px}
     #screen-create .row,#screen-join .row{margin-top:10px;}
     #screen-home{margin-top:-20px;}
   </style>
@@ -191,7 +163,7 @@
       </aside>
 
       <main class="prompt-wrap">
-        <div id="prompt" class="prompt"><div class="fallback">—</div></div>
+        <div id="prompt" class="prompt"></div>
       </main>
 
       <aside class="hand">
@@ -259,10 +231,8 @@
     warn('Firebase nie działa: ' + (e?.code || e?.message || e));
   }
 
-  // ====== CZARNE KARTY (obrazki) – manifest lub numeracja ======
-  // Jeśli dodasz assets/karty/czarne/manifest.json -> zostanie użyty.
-  // Jeśli nie, wczyta 001.png..NNN.png wg BLACK_CARD_FALLBACK_COUNT.
-  const BLACK_CARD_FALLBACK_COUNT = 96; // ustaw, jeśli nie używasz manifestu
+  /* ====== CZARNE KARTY (PNG) – manifest lub numeracja ====== */
+  const BLACK_CARD_FALLBACK_COUNT = 96; // używane tylko gdy brak manifestu
   let BLACK_DECK = [];
 
   async function loadBlackDeck(){
@@ -273,25 +243,14 @@
         BLACK_DECK = arr.map(name => `assets/karty/czarne/${name}`);
       }else{
         BLACK_DECK = Array.from({length: BLACK_CARD_FALLBACK_COUNT},
-          (_,i)=>`assets/karty/czarne/${String(i+1).padStart(3,'0')}.png`);
+          (_,i)=>`assets/karty/czarne/${String(i+1).padStart(1,'0')}.png`);
       }
     }catch(_){
       BLACK_DECK = Array.from({length: BLACK_CARD_FALLBACK_COUNT},
-        (_,i)=>`assets/karty/czarne/${String(i+1).padStart(3,'0')}.png`);
+        (_,i)=>`assets/karty/czarne/${String(i+1).padStart(1,'0')}.png`);
     }
   }
   await loadBlackDeck();
-
-  // ====== Twoje dotychczasowe taliie tekstowe (na razie zostają) ======
-  const DEFAULT_QUESTIONS = [
-    "_________ to najlepszy sposób na rozpoczęcie dnia.",
-    "W piekle czeka na mnie kara za _________.",
-    "Kiedy byłem dzieckiem, najbardziej bałem się _________.",
-    "Mój sekret na udaną randkę: _________.",
-  ];
-  const DEFAULT_ANSWERS = [
-    "pół kilo żelatyny","księdza na hulajnodze elektrycznej","martwego gołębia w plecaku","mój plan na życie","znudzonego nauczyciela WF-u","sandacz po litewsku","szósty kubek kawy","kredyt na 30 lat"
-  ];
 
   function makeCode(len=4){ const a='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<len;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
   function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
@@ -314,19 +273,15 @@
       const roomRef = doc(db,'rooms',code);
       await setDoc(roomRef,{
         code, createdAt: serverTimestamp(), stage:'lobby', round:0,
-        czarId:null, czarIdx:0, prompt:'', winner:null,
-        deckQ: shuffle([...DEFAULT_QUESTIONS]),
-        deckA: shuffle([...DEFAULT_ANSWERS]),
-        discardQ:[], discardA:[],
-        // >>> talia czarnych jako obrazki:
+        czarId:null, czarIdx:0, winner:null,
+        // tylko czarne
         deckBlack: shuffle([...BLACK_DECK]),
         discardBlack: [],
         currentBlack: null,
         hostId: uid
       });
       await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), is:true });
-      await setDoc(doc(db,'rooms',code,'hands',uid),{ cards:[] });
-
+      await setDoc(doc(db,'rooms',code,'hands',uid),{ cards:[] }); // placeholder pod przyszłe białe
       await enterRoom(code);
     }catch(e){ warn('Błąd tworzenia pokoju: '+(e?.message||e)); }
   }
@@ -343,7 +298,6 @@
       await setDoc(doc(db,'rooms',code,'players',uid),{ name:nick, score:0, joinedAt:serverTimestamp(), isOnline:true });
       const handRef = doc(db,'rooms',code,'hands',uid);
       if(!(await getDoc(handRef)).exists()) await setDoc(handRef,{cards:[]});
-
       await enterRoom(code);
     }catch(e){ warn('Błąd dołączania: '+(e?.message||e)); }
   }
@@ -399,49 +353,25 @@
 
       const czarIdx = room.czarIdx||0; const czar = players[czarIdx % players.length];
 
-      // --- CZARNE KARTY (obrazki) ---
+      // CZARNA KARTA (PNG)
       let deckBlack   = [...(room.deckBlack||[])];
       let discardBlack= [...(room.discardBlack||[])];
-
-      // poprzednią czarną (jeśli była) odkładamy na discard
       if(room.currentBlack) discardBlack.push(room.currentBlack);
 
-      if(!deckBlack.length){
-        deckBlack = shuffle(discardBlack);
-        discardBlack = [];
-      }
+      if(!deckBlack.length){ deckBlack = shuffle(discardBlack); discardBlack = []; }
       if(!deckBlack.length) return warn('Brak czarnych kart.');
-      const blackUrl = deckBlack.shift(); // wylosowana czarna karta (obrazek)
-
-      // --- PYTANIA/ODPOWIEDZI tekstowe (tymczasowo zostają) ---
-      let deckQ = [...(room.deckQ||[])]; let discardQ = [...(room.discardQ||[])];
-      if(!deckQ.length){ deckQ = shuffle(discardQ); discardQ = []; }
-      if(!deckQ.length) return warn('Brak kart pytań.');
-      const prompt = deckQ.shift();
-
-      let deckA = [...(room.deckA||[])]; let discardA = [...(room.discardA||[])];
-      if(deckA.length < players.length*3 && discardA.length) { deckA = deckA.concat(shuffle(discardA)); discardA = []; }
-
-      const batch = writeBatch(db);
-
-      for(const p of players){
-        const hRef = doc(db,'rooms',code,'hands',p.id);
-        const hSnap = await getDoc(hRef);
-        const cards = hSnap.exists()? (hSnap.data().cards||[]) : [];
-        const need = Math.max(0, 7 - cards.length);
-        for(let i=0;i<need;i++){ if(!deckA.length) break; cards.push(deckA.shift()); }
-        batch.set(hRef,{cards});
-      }
+      const blackUrl = deckBlack.shift();
 
       // wyczyść zagrania
       const subsSnap = await getDocs(collection(db,'rooms',code,'submissions'));
+      const batch = writeBatch(db);
       subsSnap.forEach(s=> batch.delete(doc(db,'rooms',code,'submissions',s.id)));
 
       // aktualizacja pokoju
       batch.update(doc(db,'rooms',code),{
         stage:'playing', round:(room.round||0)+1,
         czarId: czar.id, czarIdx: (czarIdx+1)%players.length,
-        prompt, deckQ, discardQ, deckA, discardA, winner:null,
+        winner:null,
         currentBlack: blackUrl,
         deckBlack, discardBlack
       });
@@ -450,15 +380,12 @@
     }catch(e){ warn('Błąd startu rundy: '+(e?.message||e)); }
   }
 
-  // --- "Następna runda" (wszyscy muszą kliknąć) ---
   async function readyForNextRound() {
     if (!room) return;
     const code = room.code;
     const uid = auth.currentUser?.uid;
 
-    await setDoc(doc(db, "rooms", code, "ready", uid), {
-      uid, ready: true, at: serverTimestamp()
-    });
+    await setDoc(doc(db, "rooms", code, "ready", uid), { uid, ready: true, at: serverTimestamp() });
 
     const readySnap = await getDocs(collection(db, "rooms", code, "ready"));
     const readyCount = readySnap.size;
@@ -472,53 +399,22 @@
     }
   }
 
-  async function playCard(index){
-    try{
-      if(!room || room.stage!=='playing') return;
-      if(room.czarId===(auth.currentUser||{}).uid) return warn('Sędzia nie zagrywa.');
-      const code = room.code;
-      const hRef = doc(db,'rooms',code,'hands',(auth.currentUser||{}).uid||'');
-      const hSnap = await getDoc(hRef);
-      const cards = hSnap.data()?.cards||[];
-      const card = cards[index]; if(!card) return;
-
-      await setDoc(doc(db,'rooms',code,'submissions',(auth.currentUser||{}).uid||''),{
-        uid:(auth.currentUser||{}).uid, name:me.name, text:card, at:serverTimestamp()
-      });
-
-      cards.splice(index,1); await updateDoc(hRef,{cards});
-    }catch(e){ warn('Błąd zagrania karty: '+(e?.message||e)); }
-  }
-
-  async function chooseWinner(uid){
-    try{
-      if(room.czarId!==(auth.currentUser||{}).uid) return;
-      const code = room.code;
-      const subRef = doc(db,'rooms',code,'submissions',uid);
-      const subSnap = await getDoc(subRef); if(!subSnap.exists()) return;
-      const winText = subSnap.data().text;
-
-      const pRef = doc(db,'rooms',code,'players',uid);
-      const pSnap = await getDoc(pRef); const score = (pSnap.data()?.score||0)+1;
-
-      const batch = writeBatch(db);
-      batch.update(doc(db,'rooms',code),{ winner:{uid, text:winText} });
-      batch.update(pRef,{score}); await batch.commit();
-    }catch(e){ warn('Błąd wyboru zwycięzcy: '+(e?.message||e)); }
-  }
+  // Poniższe zostają jako szkic pod białe karty (obrazki) – na razie nic nie rozdaje
+  async function playCard(index){ warn('Białe karty będą jako PNG – wdrożymy w kolejnym kroku.'); }
+  async function chooseWinner(uid){ /* zostawione jak było – wypełnimy przy białych */ }
 
   function copyCode(){ if(!room?.code) return; navigator.clipboard.writeText(room.code).catch(()=>{}); }
 
-  /* Render */
+  /* RENDER */
   function renderRoom(){
     if(!room) return;
     roundEl.textContent = room.round||0;
 
-    // pokaż aktualną czarną kartę (obrazek) albo placeholder
+    // pokaż czarną kartę PNG lub nic
     if(room.currentBlack){
       promptEl.innerHTML = `<img src="${room.currentBlack}" alt="Czarna karta">`;
     }else{
-      promptEl.innerHTML = `<div class="fallback">—</div>`;
+      promptEl.innerHTML = ``; // brak prostokąta
     }
 
     const czar = (room.players||[]).find(p=>p.id===room.czarId);
@@ -545,10 +441,7 @@
     if(!subs.length){ answersEl.classList.add('hidden'); answersEl.innerHTML=''; return; }
     answersEl.classList.remove('hidden');
     answersEl.innerHTML = `<div class="small" style="margin-bottom:8px">Zagrania</div>` +
-      subs.map(s=>`<button class="card-btn ${room?.winner?.uid===s.uid?'selected':''}" data-uid="${s.uid}"><div class="fallback">${esc(s.text)}</div></button>`).join('');
-    if(room?.czarId===(auth.currentUser||{}).uid){
-      answersEl.querySelectorAll('.card-btn').forEach(el => el.onclick = ()=> chooseWinner(el.getAttribute('data-uid')));
-    }
+      subs.map(s=>`<button class="card-btn" data-uid="${s.uid}"><div class="fallback">${esc(s.text||'—')}</div></button>`).join('');
   }
 
   function renderHand(){
@@ -557,32 +450,11 @@
       <button class="card-btn" data-i="${i}">
         <div class="fallback">${esc(t)}</div>
       </button>`).join('');
-
-    const preview = $('#preview');
-    const previewCard = $('#previewCard');
-
-    handEl.querySelectorAll('.card-btn').forEach(el=>{
-      const i = parseInt(el.getAttribute('data-i'));
-      el.onclick = ()=> playCard(i);
-      el.addEventListener('mouseenter', ()=>{
-        const text = hand[i];
-        previewCard.innerHTML = `<div class="fallback">${esc(text)}</div>`;
-        document.body.classList.add('previewing');
-        preview.classList.remove('hidden');
-        requestAnimationFrame(()=> preview.classList.add('visible'));
-      });
-      el.addEventListener('mouseleave', ()=>{
-        document.body.classList.remove('previewing');
-        preview.classList.remove('visible');
-        setTimeout(()=> preview.classList.add('hidden'),180);
-      });
-    });
   }
 
   Object.defineProperty(window,'firebaseAuthUid',{get(){return (auth&&auth.currentUser)?auth.currentUser.uid:null;}});
 
-  // Dev-podgląd:
-  // show('room');
+  // Dev: show('room');
 </script>
 </body>
 </html>
